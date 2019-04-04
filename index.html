@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html>
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>SpaceLab</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <link href="css/jquery.treegrid.css" rel="stylesheet" type="text/css" />
+    <link  href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+<table id="contractGrid" style="table-layout: fixed;" width="95%">
+    <thead id="contractThead">
+    <tr>
+        <th>科目名称</th>
+        <th>目标成本</th>
+    </tr>
+    </thead>
+</table>
+
+<!--Global JS-->
+<script src="js/jquery-2.1.1.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script src="js/jquery.treegrid.js"></script>
+<script src="js/jquery.treegrid.extension.js"></script>
+<script src="js/jquery.treegrid.bootstrap3.js"></script>
+<script src="js/layer/layer.js"></script>
+<script type="application/javascript">
+
+    var json=[{ "accoutCode": "01", "parentCode": "","totalCostLocal":150,"name":"成本" },
+        {"accoutCode": "02", "parentCode": "01","totalCostLocal":100,"name":"购买材料"},
+        {"accoutCode": "01.01", "parentCode": "02","totalCostLocal":50,"name":"鸡肉"},
+        {"accoutCode": "01.02", "parentCode": "02","totalCostLocal":50,"name":"牛肉"},
+        {"accoutCode": "03", "parentCode": "01","totalCostLocal":50,"name":"其他"}]
+
+    contractGrid = $('#contractGrid').treegridData({
+        id: 'accoutCode',
+        parentColumn: 'parentCode',
+        thead: '#contractThead',
+        type: "post", //请求数据的ajax类型
+        data:json,
+        expandColumn: null,//在哪一列上面显示展开按钮
+        bordered: true,  //是否显示边框
+        indent: 50,
+        // expandAll: false,  //是否全部展开
+        columns: [{
+            field: 'name'
+        }, {
+            field: 'totalCostLocal',
+
+        }]
+    });
+
+
+</script>
+
+</body>
+
+</html>
