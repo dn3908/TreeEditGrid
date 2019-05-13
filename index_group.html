@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html>
+<!--<![endif]-->
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
+
+    .menu {
+        width: 100px;
+        border: 1px solid #ccc;
+        position: absolute;
+        box-shadow: 0 0 5px rgba(0, 0, 0, .2);
+        padding: 10px 0;
+        transition: all .1s ease;
+    }
+
+    .menu li {
+        list-style: none;
+        width: 100%;
+    }
+
+    .menu li a {
+        display: inline-block;
+        text-decoration: none;
+        color: #555;
+        width: 100%;
+        padding: 10px 0;
+        text-align: center;
+    }
+
+    .menu li:first-of-type {
+        border-radius: 5px 5px 0 0;
+    }
+
+    .menu li a:hover,
+    .menu li a:active {
+        background: #eee;
+        color: #0AAF88;
+    }
+</style>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>SpaceLab</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <link href="css/jquery.treegrid.css" rel="stylesheet" type="text/css" />
+    <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="css/bootstrap-editable.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+    <table id="contractGrid" style="table-layout: fixed;" width="95%">
+        <thead id="contractThead">
+            <tr>
+                <th rowspan="2">核算科目编码</th>
+                <th rowspan="2">标准科目名称</th>
+                <th rowspan="2">核算科目名称</th>
+                <th colspan="3">工程量</th>
+                <th colspan="3">单价</th>
+                <th rowspan="2">合约名称</th>
+                <th rowspan="2">规划金额(元)</th>
+                <th colspan="3">其中</th>
+            </tr>
+            <tr>
+                <th>数值</th>
+                <th>类型</th>
+                <th>单位</th>
+                <th>数值</th>
+                <th>类型</th>
+                <th>单位</th>
+                <th>签约目标金额(元)</th>
+                <th>合约预估变更金额(元)</th>
+                <th>合约预估变更比例(%)</th>
+            </tr>
+        </thead>
+        <!-- <ul class="menu" id="menu">
+            <li><a href="###">复制</a></li>
+            <li><a href="###">粘贴</a></li>
+            <li><a href="###">剪切</a></li>
+            <li><a href="###">刷新</a></li>
+        </ul> -->
+    </table>
+
+    <!--Global JS-->
+    <script src="js/jquery-2.1.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/jquery.treegrid.js"></script>
+    <script src="js/jquery.treegrid.extension.js"></script>
+    <script src="js/jquery.treegrid.bootstrap3.js"></script>
+    <script src="js/bootstrap-editable.js"></script>
+    <script src="js/layer/layer.js"></script>
+    <script type="application/javascript">
+
+        subjectGrid = $('#contractGrid').treegridData({
+            id: 'accoutCode',
+            parentColumn: 'parentCode',
+            thead: '#contractThead',
+            type: "post", //请求数据的ajax类型
+            url: 'js/json2.json',
+            expandColumn: null,//在哪一列上面显示展开按钮
+            bordered: true,  //是否显示边框
+            indent: 50,
+            groupBy: true,
+            // expandAll: false,  //是否全部展开
+            columns: [{
+                field: 'standardTitleCode'
+            }, {
+                field: 'standardTitleName'
+            }, {
+                field: 'subjectName'
+            }, {
+                field: 'quantityOfWorkValue'
+            }, {
+                field: 'quantityOfWorkType'
+            }, {
+                field: 'quantityOfWorkUnit'
+            }, {
+                field: 'priceValue'
+            }, {
+                field: 'priceType'
+            }, {
+                field: 'priceUnit'
+            }, {
+                field: 'contractPlanName',
+            }, {
+                field: 'planAmountTotal',
+                groupByField: "contractPlanName",
+                // formatter: function (value, row, index, num) {
+                //     return toDecimal(value);
+                // }
+            }, {
+                field: 'fixContractAmountTotal',
+                groupByField: "contractPlanName",
+                // formatter: function (value, row, index, num) {
+                //     return toDecimal(value);
+                // }
+            }, {
+                field: 'fixChangeAmountTotal',
+                groupByField: "contractPlanName",
+                // formatter: function (value, row, index, num) {
+                //     return toDecimal(value);
+                // }
+            }, {
+                field: 'fixChangeScaleTotal',
+                groupByField: "contractPlanName",
+                // formatter: function (value, row, index, num) {
+                //     return parseInt(value / num);
+                // }
+            }]
+        });
+
+        // contractGrid = $('#contractGrid').treegridData({
+        //     id: 'accoutCode',
+        //     parentColumn: 'parentCode',
+        //     // thead: '#contractThead',
+        //     // data :json,
+        //     type: "post", //请求数据的ajax类型
+        //     url: 'js/json2.json',
+        //     expandColumn: null,//在哪一列上面显示展开按钮
+        //     bordered: true,  //是否显示边框
+        //     indent: 50,
+        //     // expandAll: false,  //是否全部展开
+        //     editable: true,
+        //     contextmenu: true,
+        //     menuEl: '.menu',
+        //     columns: [{
+        //         field: 'name',
+        //     }, {
+        //         field: 'totalMoney',
+        //         editable: {
+        //             type: 'text',
+        //             title: '金额',
+        //             showbuttons: false,
+        //             onblur: "submit",
+        //             mode: "inline",
+        //             validate: function (v) {
+        //                 if (!v) return '金额不能为空';
+        //                 //正则校验输入格式：最多两位小数。
+        //                 //  let patrn = /^([1-9]\d*\.\d{1,2}|0\.\d[1-9]|[1-9]\d*)$/;
+        //                 let patrn = /^[0-9]+.?[0-9]*$/;
+        //                 if (!patrn.test(v)) return '金额只能为正实数';
+        //             },
+        //         }
+        //     }]
+        // });
+
+
+    </script>
+
+</body>
+
+</html>

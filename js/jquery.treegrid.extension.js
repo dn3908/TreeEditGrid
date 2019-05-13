@@ -1,459 +1,29 @@
 (function ($) {
     "use strict";
-    $.fn.treegridData = function (options, param) {
 
-        //如果是调用方法
-        if (typeof options == 'string') {
-            return $.fn.treegridData.methods[options](this, param);
+    var getItemField = function (item, field) {
+        var value = item;
+
+        if (typeof field !== 'string' || item.hasOwnProperty(field)) {
+            return item[field];
         }
-
-        //如果是初始化组件
-        options = $.extend({}, $.fn.treegridData.defaults, options || {});
-        var target = $(this);
-        //得到根节点
-        target.getRootNodes = function (data) {
-            var result = [];
-            for (var i = data.length; i--;) {
-                if (isVarEmpty(data[i][options.parentColumn])) {
-                    result.push(data[i]);
-                }
-            }
-            return result;
-        };
-
-        target.options = options;
-
-        var j = 0;
-        //分组map
-        var groupbyMap = new Map();
-
-        //设置请求参数
-        target.setAjaxData = function (data) {
-            options.ajaxParams = data;
-            return target;
-        };
-
-        //获取数据
-        target.getData = function () {
-            return options.data;
-        };
-        /**
-         * 删除
-         */
-        target.remove = function () {
-            target.empty();
-        }
-
-        /**
-         * 清空表体
-         */
-        target.removeTbody = function () {
-            target.find("tbody").empty();
-        }
-
-        /**
-         * 初始化表头
-         * @returns {*|HTMLElement}
-         */
-        target.initHeader = function () {
-            var thead = null;
-            if (options.thead == undefined || options.thead == "undefined" || options.thead == "" || options.thead == null) {
-                //构造表头
-                var thr = $('<tr></tr>');
-                for (var i = 0; i < options.columns.length; i++) {
-                    var th = $('<th style="padding:10px;text-align: center;"></th>');
-                    th.text(options.columns[i].title);
-                    thr.append(th);
-                }
-                thead = $('<thead></thead>');
-                thead.append(thr);
-            } else {
-                thead = $(options.thead);
-            }
-            return thead;
-
-        }
-
-        target.initBody = function (data) {
-            var _thead, _value = "", style = {};
-            _thead = target.initHeader();
-            target.append(_thead);
-            //构造表体
-            var tbody = $('<tbody></tbody>');
-            if (data.length > 0) {
-                var rootNode = target.getRootNodes(data);
-                for (var i = 0; i < rootNode.length; i++) {
-                    var item = rootNode[i];
-                    var tr = $('<tr></tr>');
-                    //处理行样式
-                    style = calculateObjectValue(options, options.rowStyle, [item, i], style);
-                    tr.css(style);
-                    tr.addClass('treegrid-' + (j + i));
-                    tr.attr('row-id', item[options.idField]);
-                    for (var z = 0; z < options.columns.length; z++) {
-                        var td = $('<td></td>'), column = options.columns[z];
-                        if (typeof column.field !== 'undefined')
-                            _value = item[column.field] == null ? "" : item[column.field];
-                        //处理可编辑列
-                        if (typeof column.formatter !== 'undefined') {
-                            _value = calculateObjectValue(column, column.formatter, [_value, item, i], _value)
-                        }
-                        if (typeof column.editable !== 'undefined') {
-                            tr.attr('data-id', item[options.idField]);
-                            _value = calculateEditable(_value, column, item);
-                        }
-                        if (typeof column.width !== 'undefined') {
-                            td.attr('width', column.width)
-                        }
-                        if (typeof column.class !== 'undefined') {
-                            td.addClass(column.class)
-                        }
-                        td.html(_value);
-                        tr.append(td);
-                    }
-                    tbody.append(tr);
-                    var level = 1;
-                    target.getChildNodes(data, item, (j + i), tbody, level);
-                }
-                target.append(tbody);
-                target.initEvent();
-                target.treegrid({
-                    expanderExpandedClass: options.expanderExpandedClass,
-                    expanderCollapsedClass: options.expanderCollapsedClass
-                });
-
+        var props = field.split('.');
+        for (var p in props) {
+            if (props.hasOwnProperty(p)) {
+                value = value && value[props[p]];
             }
         }
-
-
-        target.noDataShow = function () {
-
-            var tbody = $('<tbody></tbody>');
-            //未找到数据展示
-            var tr = $('<tr></tr>');
-            var z = 0;
-            $.each(options.columns, function (index, column) {
-                z += 1;
-            });
-            var td = $('<td></td>');
-            td.attr("colspan", z);
-            td.css({"text-align": "center"});
-            td.html("无法找到数据");
-            tr.append(td);
-            tbody.append(tr);
-            //初始化表头并加载到表格中
-            target.append(target.initHeader());
-            target.append(tbody);
-        }
-        //事件执行
-        target.trigger = function (self, name, arg) {
-            options[name].apply(self, arg || []);
-            self.trigger($.Event(name), arg || []);
-        }
-
-        //初始化事件
-        target.initEvent = function () {
-            var that = this;
-            //绑定选中行变色
-            that.find('tr').on('click', function () {
-                $(this).addClass('action').css("background-color", "#e2f5ff")     //为选中项添加高亮
-                    .siblings().removeClass('action').css("background-color", 'white')//去除其他项的高亮形式
-                    .end();
-            });
-
-            //初始化编辑事件
-            if (!options.editable) {
-                return;
-            }
-            //设置data-pk值
-            that.find("tr").each(function (index, item) {
-                var id = $(item).attr("data-id");
-                $(item).find("td").find('a').each(function (_index, _item) {
-                    var name = $(_item).attr("data-name");
-                    $(_item).attr("data-pk", name + id);
-                });
-            });
-
-            $.each(options.columns, function (i, column) {
-                that.find('a[data-name="' + column.field + '"]').editable(column.editable)
-                    .off('save').on('save', function (e, params) {
-                    var data = that.getData(),
-                        idField = $(this).parents('tr[data-id]').data('id'),
-                        row;
-                    for (var i = 0; i < data.length; i++) {
-                        if (idField == data[i][options.idField]) {
-                            row = data[i];
-                            break;
-                        }
-                    }
-                    var oldValue = row[column.field];
-                    row[column.field] = params.submitValue;
-                    that.trigger($(this), 'onEditableSave', [column.field, row, oldValue, $(this)]);
-                });
-                that.find('a[data-name="' + column.field + '"]').editable(column.editable)
-                    .off('shown').on('shown', function (e, editable) {
-                    var data = that.getData(),
-                        idField = $(this).parents('tr[data-id]').data('id'),
-                        row;
-                    for (var i = 0; i < data.length; i++) {
-                        if (idField == data[i][options.idField]) {
-                            row = data[i];
-                            break;
-                        }
-                    }
-                    that.trigger($(this), 'onEditableShown', [column.field, row, $(this)]);
-                    // options.onEditableShown.apply(column.field, row, $(this));
-                    // that.trigger($.Event("onEditableShown"), column.field, row, $(this));
-                });
-                that.find('a[data-name="' + column.field + '"]').editable(column.editable)
-                    .off('hidden').on('hidden', function (e, reason) {
-                    var data = that.getData(),
-                        idField = $(this).parents('tr[data-id]').data('id'),
-                        row;
-                    for (var i = 0; i < data.length; i++) {
-                        if (idField == data[i][options.idField]) {
-                            row = data[i];
-                            break;
-                        }
-                    }
-                    that.trigger($(this), 'onEditableHidden', [column.field, row, $(this)]);
-                    // options.onEditableHidden.apply(column.field, row, $(this));
-                    // that.trigger($.Event("onEditableHidden"), column.field, row, $(this));
-                });
-
-            });
-            that.trigger($(this), 'onEditableInit');
-            // this.trigger('onEditableInit');
-        };
-
-        /**
-         * 重新加载
-         */
-        target.reload = function () {
-            if (options.thead === null) {
-                //清空表
-                target.empty();
-            } else {
-                //清空表体
-                target.find("tbody").empty();
-            }
-            $.ajax({
-                type: options.type,
-                url: options.url,
-                data: options.ajaxParams,
-                cache: false,
-                dataType: "JSON",
-                success: function (data, textStatus, jqXHR) {
-                    if (data.length > 0) {
-                        options.data = data;
-                        layer.load(1, {
-                            shade: [0.3, '#fff'] //0.1透明度的白色背景
-                        });
-                        target.initBody(data);
-                    } else {
-                        target.noDataShow();
-                    }
-                    if (!options.expandAll) {
-                        target.treegrid('collapseAll');
-                    }
-                },
-                beforeSend: function () {
-                    layer.load(1, {
-                        shade: [0.3, '#fff'] //0.1透明度的白色背景
-                    });
-                },
-                complete: function () {
-                    layer.closeAll('loading');
-                }
-            });
-
-        };
-
-        /**
-         * 数组加载（未清除表头）
-         */
-        target.loadData = function (data) {
-
-            if (options.thead === null) {
-                //清空表
-                target.empty();
-            } else {
-                //清空表体
-                target.find("tbody").empty();
-            }
-            if (Array.isArray(data)) {
-                options.data = data;
-                layer.load(1, {
-                    shade: [0.3, '#fff'] //0.1透明度的白色背景
-                });
-                target.initBody(data);
-                layer.closeAll('loading');
-            } else {
-                layer.load(1, {
-                    shade: [0.3, '#fff'] //0.1透明度的白色背景
-                });
-                target.noDataShow();
-                layer.closeAll('loading');
-            }
-
-        };
-
-        /**
-         * 递归获取子节点并且设置子节点
-         * @param data 数据
-         * @param parentNode 父节点
-         * @param parentIndex 父类索引
-         * @param tbody  表格对象
-         * @param level 层级
-         */
-        target.getChildNodes = function (data, parentNode, parentIndex, tbody, level) {
-            var indent = options.indent, style = {};
-            for (var i = 0; i < data.length; i++) {
-                var item = data[i];
-                if (item[options.parentColumn] == parentNode[options.id]) {
-                    var tr = $('<tr></tr>');
-                    var nowParentIndex = (parentIndex + "" + (j++));
-                    var newlevel = level + 1;
-                    tr.addClass('treegrid-' + nowParentIndex);
-                    tr.addClass('treegrid-parent-' + parentIndex);
-                    //处理行样式
-                    style = calculateObjectValue(options, options.rowStyle, [item, i], style);
-                    tr.css(style);
-                    tr.attr('row-id', item[options.idField]);
-                    $.each(options.columns, function (index, column) {
-                        var td = $('<td></td>');
-                        var cssValue = level * indent;
-                        var css = {"padding-left": cssValue + "px"};
-                        var _value = "";
-                        if (index == 0) {
-                            td.css(css)
-                        }
-                        if (typeof column.field !== 'undefined')
-                            _value = item[column.field] == null ? "" : item[column.field];
-                        //合并分组
-                        if (typeof column.groupBy !== 'undefined' && column.groupBy) {
-                            //判断是否分组过 判断依据  分组名+本身属性+父类关联
-                            if (!groupbyMap.hasKey(item[column.groupByField] + column.field + item[options.parentColumn])) {
-                                _value = calculateGroupby(column, column.groupByField, options.parentColumn, item, data, groupbyMap);
-                                //格式处理列值
-                                if (typeof column.formatter !== 'undefined') {
-                                    //格式入参值 {值,本行,索引,合并行数量}
-                                    _value = calculateObjectValue(column, column.formatter, [_value, item, i, groupbyMap.get(item[column.groupByField] + column.field + item[options.parentColumn])], _value)
-                                }
-                                //处理编辑列
-                                if (typeof column.editable !== 'undefined') {
-                                    tr.attr('data-id', item[options.idField]);
-                                    _value = calculateEditable(_value, column, item);
-                                }
-                                //处理列大小
-                                if (typeof column.width !== 'undefined') {
-                                    td.attr('width', column.width)
-                                }
-                                //处理列样式
-                                if (typeof column.class !== 'undefined') {
-                                    td.addClass(column.class)
-                                }
-                                //合并行
-                                td.attr("rowspan", groupbyMap.get(item[column.groupByField] + column.field + item[options.parentColumn]));
-                                td.html(_value);
-                                tr.append(td);
-                            }
-                        } else {
-                            //格式处理列值
-                            if (typeof column.formatter !== 'undefined') {
-                                _value = calculateObjectValue(column, column.formatter, [_value, item, i], _value)
-                            }
-                            //处理列编辑
-                            if (typeof column.editable !== 'undefined') {
-                                tr.attr('data-id', item[options.idField]);
-                                _value = calculateEditable(_value, column, item);
-                            }
-                            //处理列大小
-                            if (typeof column.width !== 'undefined') {
-                                td.attr('width', column.width)
-                            }
-                            //处理列样式
-                            if (typeof column.class !== 'undefined') {
-                                td.addClass(column.class)
-                            }
-                            td.html(_value);
-                            tr.append(td);
-                        }
-                    });
-                    tbody.append(tr);
-                    target.getChildNodes(data, item, nowParentIndex, tbody, newlevel)
-                }
-            }
-        };
-        //删除节点
-        target.removeNode = function (item) {
-            $('.treegrid-' + item.id).remove();
-        }
-
-        target.addClass('table ');
-
-        if (options.striped) {
-            target.addClass('table-striped');
-        }
-        if (options.bordered) {
-            target.addClass('table-bordered');
-        }
-        if (options.url) {
-            $.ajax({
-                type: options.type,
-                url: options.url,
-                data: options.ajaxParams,
-                cache: false,
-                dataType: "JSON",
-                success: function (data, textStatus, jqXHR) {
-                    if (data.length > 0) {
-                        options.data = data;
-                        target.initBody(options.data);
-                        calculateObjectValue(options, options.onLoadSuccess, [data]);
-                    } else {
-                        target.noDataShow();
-                    }
-                    if (!options.expandAll) {
-                        target.treegrid('collapseAll');
-                    }
-                },
-                beforeSend: function () {
-                    layer.load(1, {
-                        shade: [0.3, '#fff'] //0.1透明度的白色背景
-                    });
-                },
-                complete: function () {
-                    layer.closeAll('loading');
-                }
-            });
-        } else {
-            if (options.data) {
-                if (Array.isArray(options.data)) {
-                    if (options.data.length > 0) {
-                        layer.load(1, {
-                            shade: [0.3, '#fff'] //0.1透明度的白色背景
-                        });
-                        target.initBody(options.data);
-                        layer.closeAll('loading');
-                        calculateObjectValue(options, options.onLoadSuccess, [options.data]);
-                    } else {
-                        layer.load(1, {
-                            shade: [0.3, '#fff'] //0.1透明度的白色背景
-                        });
-                        target.noDataShow();
-                        layer.closeAll('loading');
-                    }
-                }
-            }
-        }
-        return target;
+        return value;
     };
 
-    /**
-     * 字符替换
-     * @param str
-     * @returns {*}
-     */
+    var isVarEmpty = function (aObj) {
+        if ((aObj === undefined || aObj === "undefined" || aObj === "" || aObj === null)) {
+            return true;
+        }
+        return false;
+    }
+
+    // it only does '%s', and return '' when arguments are undefined
     var sprintf = function (str) {
         var args = arguments,
             flag = true,
@@ -472,64 +42,12 @@
     };
 
     /**
-     * 编辑列值渲染
-     * @param value
-     * @param column
-     * @param row
-     * @returns {*}
+     * 计算对象值
+     * @param {*} self
+     * @param {*} name
+     * @param {*} args
+     * @param {*} defaultValue
      */
-    var calculateEditable = function (value, column, row) {
-        var _dont_edit_formatter = false;
-        if (column.editable.hasOwnProperty('noeditFormatter')) {
-            _dont_edit_formatter = column.editable.noeditFormatter(value, row, column);
-        }
-        if (_dont_edit_formatter === false) {
-            return ['<a href="javascript:void(0)"',
-                ' data-name="' + column.field + '"',
-                ' data-pk="' + row.id + '"',
-                ' data-value="' + value + '"',
-                '>' + '</a>'
-            ].join('');
-        } else {
-            return value;
-        }
-
-
-    }
-
-    /**
-     *
-     * @param self 自身(列)
-     * @param field 分组属性
-     * @param parentField 父属性
-     * @param args 行
-     * @param sources 全部数据
-     * @param map map去重
-     * @returns {number}
-     */
-        //计算分组
-    var calculateGroupby = function (self, field, parentField, args, sources, map) {
-            var total = 0;
-            var rowspan = 0;
-            if (Array.isArray(sources)) {
-                //循环所有数据，查询合并项目
-                $.each(sources, function (i, item) {
-                    //分组名称相同并且父类代码相同合并列
-                    if (item[field] === args[field] && item[parentField] === args[parentField]) {
-                        if (typeof self.isCovered !== 'undefined' && self.isCovered) {
-                            total = item[self.field];
-                        } else {
-                            total += item[self.field];
-                        }
-                        rowspan += 1;
-                    }
-                });
-                map.put(args[field] + self.field + args[parentField], rowspan);
-            }
-            return total;
-        }
-
-    //计算对象值
     var calculateObjectValue = function (self, name, args, defaultValue) {
         var func = name;
 
@@ -558,122 +76,845 @@
         return defaultValue;
     };
 
-    var isVarEmpty = function (aObj) {
-        if ((aObj === undefined || aObj === "undefined" || aObj === "" || aObj === null)) {
-            return true;
+
+    /**
+     * 初始化可编辑列
+     * @param {*} value  值
+     * @param {*} column  列
+     * @param {*} row 行
+     */
+    var calculateEditable = function (value, column, row, options) {
+        var _dont_edit_formatter = false;
+        if (column.editable.hasOwnProperty('noeditFormatter')) {
+            _dont_edit_formatter = column.editable.noeditFormatter(value, row, column);
         }
-        return false;
+        if (_dont_edit_formatter === false) {
+            return ['<a href="javascript:void(0)"',
+                ' data-name="' + column.field + '"',
+                ' data-pk="' + row[options.idField] + '"',
+                ' data-value="' + value + '"',
+                '>' + '</a>'
+            ].join('');
+        } else {
+            return value;
+        }
+
+
+    }
+
+
+    var TreegridData = function (el, options) {
+        this.options = options;
+        this.$el = $(el);
+        //分組map
+        this.groupbyMap = new Map();
+        this.init();
+    };
+
+    /**
+     * 初始化组装
+     */
+    TreegridData.prototype.init = function () {
+        this.initContainer();
+        this.initHeader();
+        this.initData();
+        this.initBody();
+        this.initEvent();
+        this.initServer();
+    };
+    /**
+     * 初始化容器
+     */
+    TreegridData.prototype.initContainer = function () {
+        this.$container = $([
+            '<div class="treegridData-table">',
+            '<div class="fixed-table-container">',
+            '<div class="fixed-table-header"></div>',
+            '<div class="fixed-table-body"></div>',
+            '</div>',
+            '</div>'
+        ].join(''));
+        this.$container.insertAfter(this.$el);
+        this.$tableContainer = this.$container.find('.fixed-table-container');
+        this.$tableHeader = this.$container.find('.fixed-table-header');
+        this.$tableBody = this.$container.find('.fixed-table-body');
+
+
+        this.$tableBody.append(this.$el);
+        this.$container.after('<div class="clearfix"></div>');
+
+        this.$el.addClass(this.options.tableCss);
+        if (this.options.striped) {
+            this.$el.addClass('table-striped');
+        }
+        if (this.options.bordered) {
+            this.$el.addClass('table-bordered');
+        }
+    }
+
+
+    /**
+     * 初始化表体表头
+     *
+     */
+    TreegridData.prototype.initHeader = function () {
+        var html = [];
+        this.$header = this.$el.find('>thead');
+
+        //是否存在表头
+        if (!this.$header.length) {
+            //不存在,创建表头
+            this.$header = $('<thead></thead>').appendTo(this.$el);
+            html.push('<tr>');
+            $.each(this.options.columns, function (index, column) {
+                var text = column.title,
+                    halign = '', // header align style
+                    align = '', // body align style
+                    style = '',
+                    class_ = sprintf(' class="%s"', column['class']),
+                    unitWidth = 'px',
+                    width = column.width;
+
+                if (column.width && typeof column.width === 'string') {
+                    width = column.width.replace('%', '').replace('px', '');
+                }
+
+                halign = sprintf('text-align: %s; ', column.halign ? column.halign : column.align);
+                align = sprintf('text-align: %s; ', column.align);
+                style = sprintf('vertical-align: %s; ', column.valign);
+                style += sprintf('width: %s; ', width);
+
+                html.push('<th',
+                    sprintf(' style="%s"', halign + align + style),
+                    sprintf(' rowspan="%s"', column.rowspan),
+                    sprintf(' colspan="%s"', column.colspan),
+                    '>');
+                html.push(text);
+                html.push('</th>');
+            });
+            html.push('</tr>');
+            this.$header.html(html.join(''));
+
+        }
+    }
+    /**
+     * @description: 初始化数据
+     * @param {type} 
+     * @return: 
+     */
+    TreegridData.prototype.initData = function (data, type) {
+        if (type === 'append') {
+            this.data = this.data.concat(data);
+        } else if (type === 'prepend') {
+            this.data = [].concat(data).concat(this.data);
+        } else {
+            this.data = data || this.options.data;
+        }
+
+        // Fix #839 Records deleted when adding new row on filtered table
+        if (type === 'append') {
+            this.options.data = this.options.data.concat(data);
+        } else if (type === 'prepend') {
+            this.options.data = [].concat(data).concat(this.options.data);
+        } else {
+            this.options.data = this.data;
+        }
+
     }
 
     /**
-     * 控件方法
-     * @type {{
-     * getAllNodes: (function(*): (*|void)),  获取当前所有数据
-     * expand2: $.fn.treegridData.methods.expand2, 展开2级目录
-     * updateCell: $.fn.treegridData.methods.updateCell,  更新列
-     * removeRow: $.fn.treegridData.methods.removeRow 删除行
-     * }}
+    * @description: 无法找到数据显示
+    * @param {type} 
+    * @return: 
+    */
+    TreegridData.prototype.noDataShow = function (this_) {
+        var html = [];
+        this_.$body = this_.$el.find('>tbody');
+        html.push('<tr>');
+        html.push('<td ',
+            sprintf(' %s', sprintf(' colspan="%s"', this_.options.columns.length)),
+            sprintf(' %s', sprintf(' style="%s"', 'text-align:center')),
+            '>',
+            '无法找到数据',
+            '</td>'
+        );
+        html.push('</tr>');
+        this_.$body.html(html.join(' '));
+    }
+
+
+    /**
+     * @description: 初始化表体
+     * @param {type} 
+     * @return: 
      */
-    $.fn.treegridData.methods = {
-        /**
-         * 获取当前所有节点
-         * @param target
-         * @returns {*|void}
-         */
-        getAllNodes: function (target) {
-            return target.treegrid('getAllNodes');
-        },
-        /**
-         * 展开2级
-         * @param target
-         */
-        expand2: function (target) {
-            target.treegrid('getAllNodes').each(function () {
-                if ($(this).treegrid('getDepth') < 2) {
-                    $(this).treegrid('expand');
-                }
-            })
-        },
-        /**
-         * 通过唯一ID查询记录信息
-         * @param target
-         * @param param
-         * @returns {*}
-         */
-        getRowByUniqueId: function (target, param) {
-            if (typeof param !== 'object')
-                return;
-            if (isVarEmpty(param.id))
-                return;
-            var data = target.getData(), row;
-            for (var i = 0; i < data.length; i++) {
-                if (param.id === data[i][target.options.idField]) {
-                    row = data[i];
-                    break;
-                }
-            }
-            return row;
-        },
-        /**
-         * 根据选中行获取选中值
-         */
-        getSelect: function (target) {
-            var selectRow;
-            var data = target.getData();
-            var selectId = target.find('.action').data('id');
-            if (isVarEmpty(selectId)) {
-                return;
-            }
-            for (var i = 0; i < data.length; i++) {
-                if (selectId === data[i][target.options.idField]) {
-                    selectRow = data[i];
-                    break;
-                }
-            }
-            return selectRow;
+    TreegridData.prototype.initBody = function () {
+        var that = this,
+            html = [],
+            data = this.getData(), j = 0;
+        this.$body = this.$el.find('>tbody');
+        if (!this.$body.length) {
+            this.$body = $('<tbody></tbody>').appendTo(this.$el);
+        }
+        if (this.options.groupBy) {
+            //初始化分组信息
+            this.initGroup();
+            console.log(this.groupbyMap);
+        }
 
-        },
-        /**
-         * 更新列
-         * @param target
-         * @param param
-         */
-        updateCell: function (target, param) {
-            if (typeof param !== 'object')
-                return;
-            if (isVarEmpty(param.rowId) || isVarEmpty(param.field) || isVarEmpty(param.value))
-                return;
-            var data = target.getData(), row;
-            for (var i = 0; i < data.length; i++) {
-                if (data[i][target.options.idField] === param.rowId) {
-                    row = data[i];
-                    break;
-                }
+        //优化，初始化一个片段，片段不会引发前端渲染，因为所有的节点会被一次插入到文档中，而这个操作仅发生一个重渲染的操作
+        var trFragments = $(document.createDocumentFragment());
+        //获取根目录
+        var roots = this.getRootNodes(data);
+        var level = 1;
+        for (var i = 0, m = roots.length; i < m; i++) {
+            var item = roots[i], tr;
+            //判断是否分组
+            if (this.options.groupBy) {
+                tr = this.initGroupRow(item, i, false, 0);
+            } else {
+                tr = this.initRow(item, i, false, 0);
             }
-            row[param.field] = param.value;
-            //界面更新
-            var ele = target.find("tr[row-id$='" + param.rowId + "']").children();
-            //更新索引
-            var indexCell = 0;
-            $.each(target.options.columns, function (index, column) {
-                if (column.field == param.field)
-                    indexCell = index;
+
+            if (tr) {
+                trFragments.append(tr);
+            }
+            this.getChildNodes(item, (j + i), level, trFragments);
+        }
+        this.$body.html(trFragments);
+
+        //没有数据展示
+        if ((data.length === 0 || this.options.data.length === 0)) {
+            this.noDataShow(this);
+        }
+
+        //整合treegrid
+        this.$el.treegrid({
+            expanderExpandedClass: this.options.expanderExpandedClass,
+            expanderCollapsedClass: this.options.expanderCollapsedClass
+        });
+    }
+
+    /**
+   * 初始化分组
+   */
+    TreegridData.prototype.initGroup = function () {
+        var that = this,
+            data = this.getData();
+        //清空分组信息
+        this.groupbyMap.clear();
+        $.each(data, function (index, row) {
+            $.each(that.options.columns, function (index, column) {
+                //列具有分组属性
+                if (column.groupByField) {
+                    that.calculateGroupby(column, row, column.groupByField, that);
+                }
             });
-            $(ele[indexCell]).html(param.value);
+        })
+    }
 
+    /**
+     * 计算分组
+     * @param column 自身列
+     * @param row  行
+     * @param groupByField 分组属性
+     */
+    TreegridData.prototype.calculateGroupby = function (column, row, groupByField, this_) {
+        var group_ = {
+            total: row[column.field],
+            isUse: false,
+            children: []
         },
-        removeRow: function (target, param) {
+            //分组名称相同并且父类代码相同的列进行行合并
+            key_ = row[groupByField] + row[this_.options.parentColumn] + column.field
+
+        if (this_.groupbyMap.has(key_)) {
+            group_ = this_.groupbyMap.get(key_);
+            if (!column.isCovered) {
+                group_.total += row[column.field];
+            }
+            group_.children.push(row);
+            this_.groupbyMap.delete(key_);
+            this_.groupbyMap.set(key_, group_);
+            return;
+        }
+        group_.children.push(row);
+        this_.groupbyMap.set(key_, group_);
+    }
+
+
+    /**
+     * @description: 递归生成子项
+     * @param parentNode, 父节点
+     * @param parentIndex,  父索引
+     * @param level, 层级
+     * @param parentDom 父级目录
+     */
+    TreegridData.prototype.getChildNodes = function (parentNode, parentIndex, level, parentDom) {
+        var that = this, data = this.getData();
+        for (var i = 0, m = data.length; i < m; i++) {
+            var node = data[i];
+            if (node[that.options.parentColumn] == parentNode[that.options.id]) {
+                var nowParentIndex = (parentIndex + "" + i);
+                var newlevel = level + 1, tr;
+                //判断是否分组
+                if (this.options.groupBy) {
+                    tr = this.initGroupRow(node, nowParentIndex, parentIndex + "", newlevel);
+                } else {
+                    tr = this.initRow(node, nowParentIndex, parentIndex + "", newlevel);
+                }
+                if (tr) {
+                    parentDom.append(tr);
+                }
+                this.getChildNodes(node, nowParentIndex, newlevel, parentDom);
+            }
 
         }
-        //组件的其他方法也可以进行类似封装........
+    }
+
+
+    /**
+     * @description: 插入分组行
+     * @param item  行
+     * @param index 索引
+     * @param parentIndex 父类索引
+     * @param level 层数
+     * @return: 
+     */
+    TreegridData.prototype.initGroupRow = function (item, index, parentIndex, level) {
+        var that = this,
+            html = [],
+            style = {}, class_ = '',
+            indent = this.options.indent,
+            style = calculateObjectValue(this.options, this.options.rowStyle, [item, index], style),
+            isUser_ = false,
+            children = [];
+        //获取当前分组集合
+        $.each(this.options.columns, function (colindex, column) {
+            if (column.groupByField) {
+                children = that.groupbyMap.get(item[column.groupByField] + item[that.options.parentColumn] + column.field).children;
+                isUser_ = that.groupbyMap.get(item[column.groupByField] + item[that.options.parentColumn] + column.field).isUse;
+                return false
+            }
+
+        })
+
+        $.each(children, function (childrenIndex, row) {
+            if (parentIndex) {
+                class_ = 'treegrid-' + (index) + ' treegrid-parent-' + parentIndex;
+            } else {
+                class_ = 'treegrid-' + (index);
+            }
+            if (isUser_) {
+                return true;
+            }
+            html.push('<tr',
+                sprintf(' class="%s"', class_),
+                sprintf(' style="%s"', style ? style : ''),
+                sprintf(' row-id="%s"', row[that.options.idField]),
+                sprintf(' data-index="%s"', (index + "_" + childrenIndex)),
+                sprintf(' data-level="%s"', level),
+                '>'
+            );
+
+            $.each(that.options.columns, function (colindex, column) {
+                var text = '',
+                    value_ = getItemField(row, column.field),
+                    value = '',
+                    id_ = '',
+                    rowspan_ = 1,
+                    colspan_ = '',
+                    class_ = '',
+                    title_ = '',
+                    style_ = '',
+                    editable_ = '',
+                    group_ = that.groupbyMap.get(row[column.groupByField] + row[that.options.parentColumn] + column.field);
+
+                if (index === 0) {
+                    style_ = "padding-left:" + (indent * level) + "px;";
+                }
+                if (column.style) {
+                    style_ += column.style;
+                }
+                if (column.field) {
+                    id_ = sprintf(' id="%s"', column.field);
+                }
+                if (column.groupByField) {
+                    rowspan_ = sprintf(' rowspan="%s"', group_.children.length);
+                }
+                if (column.colspan) {
+                    colspan_ = sprintf(' colspan="%s"', column.colspan);
+                }
+                if (column.classes) {
+                    class_ = sprintf(' class="%s"', column.classes);
+                }
+                if (column.title) {
+                    title_ = sprintf(' title="%s"', column.title);
+                }
+                if (column.formatter) {
+                    value = calculateObjectValue(column, column.formatter, [value_, item, index], value_)
+                } else {
+                    value = value_;
+                }
+                //是否編輯
+                if (column.editable) {
+                    editable_ = sprintf(' data-id="%s"', item[that.options.idField]);
+                    value = calculateEditable(value, column, item, that.options);
+                }
+                //空值默认显示
+                value = typeof value === 'undefined' || value === null ?
+                    "-" : value;
+
+                //是否分组列
+                if (column.groupByField) {
+                    if (!group_.isUse) {
+                        //标识已经执行分组
+                        group_.isUse = true;
+                        html.push('<td ',
+                            sprintf(' %s', id_),
+                            sprintf(' %s', sprintf(' style="%s"', style_)),
+                            sprintf(' %s', class_),
+                            sprintf(' %s', rowspan_),
+                            sprintf(' %s', colspan_),
+                            sprintf(' %s', title_),
+                            sprintf(' %s', editable_),
+                            '>',
+                            value,
+                            '</td>'
+                        );
+                    }
+                } else {
+                    html.push('<td ',
+                        sprintf(' %s', id_),
+                        sprintf(' %s', sprintf(' style="%s"', style_)),
+                        sprintf(' %s', class_),
+                        sprintf(' %s', rowspan_),
+                        sprintf(' %s', colspan_),
+                        sprintf(' %s', title_),
+                        sprintf(' %s', editable_),
+                        '>',
+                        value,
+                        '</td>'
+                    );
+                }
+
+            });
+        });
+        html.push('</tr>');
+        return html.join(' ');
+    }
+
+    /**
+     * 插入行
+     */
+    TreegridData.prototype.initRow = function (item, index, parentIndex, level) {
+        var that = this,
+            html = [],
+            style = {}, class_ = '',
+            indent = this.options.indent,
+            style = calculateObjectValue(this.options, this.options.rowStyle, [item, index], style);
+
+        //父类索引存在
+        if (parentIndex) {
+            class_ = 'treegrid-' + (index) + ' treegrid-parent-' + parentIndex;
+        } else {
+            class_ = 'treegrid-' + (index);
+        }
+        html.push('<tr',
+            sprintf(' class="%s"', class_),
+            sprintf(' style="%s"', style ? style : ''),
+            sprintf(' row-id="%s"', item[this.options.idField]),
+            sprintf(' data-index="%s"', index),
+            sprintf(' data-level="%s"', level),
+            '>'
+        );
+        $.each(this.options.columns, function (index, column) {
+            var text = '',
+                value_ = getItemField(item, column.field),
+                value = '',
+                id_ = '',
+                rowspan_ = '',
+                colspan_ = '',
+                class_ = '',
+                title_ = '',
+                style_ = '',
+                editable_ = '';
+            if (index === 0) {
+                style_ = "padding-left:" + (indent * level) + "px;";
+            }
+            if (column.style) {
+                style_ += column.style;
+            }
+            if (column.field) {
+                id_ = sprintf(' id="%s"', column.field);
+            }
+            if (column.rowspan) {
+                rowspan_ = sprintf(' rowspan="%s"', column.rowspan);
+            }
+            if (column.colspan) {
+                colspan_ = sprintf(' colspan="%s"', column.colspan);
+            }
+            if (column.classes) {
+                class_ = sprintf(' class="%s"', column.classes);
+            }
+            if (column.title) {
+                title_ = sprintf(' title="%s"', column.title);
+            }
+            if (column.formatter) {
+                value = calculateObjectValue(column, column.formatter, [value_, item, index], value_)
+            } else {
+                value = value_;
+            }
+            //是否編輯
+            if (column.editable) {
+                editable_ = sprintf(' data-id="%s"', item[that.options.idField]);
+                value = calculateEditable(value, column, item, that.options);
+            }
+            //空值默认显示
+            value = typeof value === 'undefined' || value === null ?
+                "-" : value;
+
+            html.push('<td ',
+                sprintf(' %s', id_),
+                sprintf(' %s', sprintf(' style="%s"', style_)),
+                sprintf(' %s', class_),
+                sprintf(' %s', rowspan_),
+                sprintf(' %s', colspan_),
+                sprintf(' %s', title_),
+                sprintf(' %s', editable_),
+                '>',
+                value,
+                '</td>'
+            );
+
+        });
+        html.push('</tr>');
+
+        return html.join(' ');
+    }
+
+
+    /**
+     * @description: ajax初始化
+     * @param {type} 
+     * @return: 
+     */
+    TreegridData.prototype.initServer = function (query, url) {
+        var that = this,
+            params = this.options.ajaxParams,
+            request;
+
+        if (!(url || this.options.url)) {
+            return;
+        }
+
+        request = {
+            type: this.options.type,
+            url: url || this.options.url,
+            data: this.options.ajaxParams,
+            contentType: this.options.contentType,
+            success: function (data) {
+                if (data.length > 0) {
+                    //触发加载成功事件
+                    calculateObjectValue(that.options, that.options.onLoadSuccess, [data]);
+                    that.load(data);
+                }
+                if (!that.options.expandAll) {
+                    that.treegrid('collapseAll');
+                }
+            },
+            beforeSend: function () {
+                layer.load(1, {
+                    shade: [0.3, '#fff'] //0.1透明度的白色背景
+                });
+            },
+            complete: function () {
+                layer.closeAll('loading');
+            },
+            error: function (res) {
+                layer.closeAll('loading');
+            }
+        };
+
+        if (this._xhr && this._xhr.readyState !== 4) {
+            this._xhr.abort();
+        }
+        this._xhr = $.ajax(request);
+    }
+
+
+    /**
+     * @description: 重新加载
+     * @param {type} 
+     * @return: 
+     */
+    TreegridData.prototype.load = function (data) {
+        this.initData(data);
+        this.initBody();
+        this.initEvent();
+    }
+
+    /**
+     * @description: 初始化事件
+     * @param {type} 
+     * @return: 
+     */
+    TreegridData.prototype.initEvent = function () {
+        var that = this;
+        //绑定选中行变色
+        this.$tableBody.find('tr').on('click', function () {
+            $(this).addClass('action').css("background-color", "#e2f5ff")     //为选中项添加高亮
+                .siblings().removeClass('action').css("background-color", 'white')//去除其他项的高亮形式
+                .end();
+        });
+
+        //初始化编辑事件
+        if (!this.options.editable) {
+            return;
+        }
+        //设置data-pk值
+        this.$tableBody.find("tr").each(function (index, item) {
+            var id = $(item).attr("data-id");
+            $(item).find("td").find('a').each(function (_index, _item) {
+                var name = $(_item).attr("data-name");
+                $(_item).attr("data-pk", name + id);
+            });
+        });
+
+        $.each(this.options.columns, function (i, column) {
+            that.$tableBody.find('a[data-name="' + column.field + '"]').editable(column.editable)
+                .off('save').on('save', function (e, params) {
+                    var data = that.getData(),
+                        idField = $(this).parents('td[data-id]').data('id'),
+                        row;
+                    for (var i = 0, m = data.length; i < m; i++) {
+                        if (idField == data[i][that.options.idField]) {
+                            row = data[i];
+                            break;
+                        }
+                    }
+                    var oldValue = row[column.field];
+                    row[column.field] = params.submitValue;
+                    that.trigger($(this), 'onEditableSave', [column.field, row, oldValue, $(this)]);
+                });
+            that.$tableBody.find('a[data-name="' + column.field + '"]').editable(column.editable)
+                .off('shown').on('shown', function (e, editable) {
+                    var data = that.getData(),
+                        idField = $(this).parents('td[data-id]').data('id'),
+                        row;
+                    for (var i = 0, m = data.length; i < m; i++) {
+                        if (idField == data[i][that.options.idField]) {
+                            row = data[i];
+                            break;
+                        }
+                    }
+                    that.trigger($(this), 'onEditableShown', [column.field, row, $(this)]);
+                    // options.onEditableShown.apply(column.field, row, $(this));
+                    // that.trigger($.Event("onEditableShown"), column.field, row, $(this));
+                });
+            that.$tableBody.find('a[data-name="' + column.field + '"]').editable(column.editable)
+                .off('hidden').on('hidden', function (e, reason) {
+                    var data = that.getData(),
+                        idField = $(this).parents('td[data-id]').data('id'),
+                        row;
+                    for (var i = 0, m = data.length; i < m; i++) {
+                        if (idField == data[i][that.options.idField]) {
+                            row = data[i];
+                            break;
+                        }
+                    }
+                    that.trigger($(this), 'onEditableHidden', [column.field, row, $(this)]);
+                    // options.onEditableHidden.apply(column.field, row, $(this));
+                    // that.trigger($.Event("onEditableHidden"), column.field, row, $(this));
+                });
+
+        });
+        that.trigger($(this), 'onEditableInit');
+
+    }
+
+    /**
+     * @description:  销毁treegridDate
+     * @param {type} 
+     * @return: 
+     */
+    TreegridData.prototype.destroy = function () {
+        this.$el.insertBefore(this.$container);
+        this.$container.next().remove();
+        this.$container.remove();
     };
 
+    /**
+     * 事件主动触发
+     */
+    TreegridData.prototype.trigger = function (self, name, args) {
+        this.options[name].apply(this.options, args);
+        this.$el.trigger($.Event(name), args);
+    }
+
+    /**
+     * @description: 获取根目录
+     * @param {type} 
+     * @return: 
+     */
+    TreegridData.prototype.getRootNodes = function (data) {
+        return data.filter(node => isVarEmpty(node[this.options.parentColumn]));
+    };
+
+    /**
+     * @description: 获取全部数据
+     * @param {type} 
+     * @return: 
+     */
+    TreegridData.prototype.getData = function () {
+        return this.options.data;
+    };
+
+    /**
+     * @description:  获取全部节点
+     * @param {type} 
+     * @return: 
+     */
+    TreegridData.prototype.getAllNodes = function () {
+        return this.treegrid('getAllNodes');
+    };
+
+    /**
+     * @description: 展开二级目录
+     * @param {type} 
+     * @return: 
+     */
+    TreegridData.prototype.expand2 = function () {
+        this.treegrid('getAllNodes').each(function () {
+            if ($(this).treegrid('getDepth') < 2) {
+                $(this).treegrid('expand');
+            }
+        })
+    };
+
+    /**
+     * @description: 根据唯一ID获取数据
+     * @param {type} 
+     * @return: 
+     */
+    TreegridData.prototype.getRowByUniqueId = function (param) {
+        if (typeof param !== 'object')
+            return;
+        if (isVarEmpty(param.id))
+            return;
+        var that = this, data = this.getData(), row;
+        for (var i = 0, m = data.length; i < m; i++) {
+            if (param.id === data[i][that.options.idField]) {
+                row = data[i];
+                break;
+            }
+        }
+        return row;
+
+    }
+
+    /**
+     * @description: 获取选中数据
+     * @param {type} 
+     * @return: 
+     */
+    TreegridData.prototype.getSelect = function () {
+        var selectRow,
+            data = this.getData()
+        that = this;
+        var selectId = this.$body.find('.action').data('id');
+        if (isVarEmpty(selectId)) {
+            return;
+        }
+        for (var i = 0; i < data.length; i++) {
+            if (selectId === data[i][that.options.idField]) {
+                selectRow = data[i];
+                break;
+            }
+        }
+        return selectRow;
+
+    }
+
+    /**
+     * @description: 更新列值
+     * @param param 参数 {rowId:行ID,field:列属性,value:列值}
+     * @return: 
+     */
+    TreegridData.prototype.updateCell = function (param) {
+        if (typeof param !== 'object')
+            return;
+        if (isVarEmpty(param.rowId) || isVarEmpty(param.field) || isVarEmpty(param.value))
+            return;
+        var data = this.getData(), that = this, row;
+        for (var i = 0; i < data.length; i++) {
+            if (data[i][that.options.idField] === param.rowId) {
+                row = data[i];
+                break;
+            }
+        }
+        row[param.field] = param.value;
+        //界面更新
+        var ele = this.$body.find("tr[row-id$='" + param.rowId + "']").children();
+        //更新索引
+        var indexCell = 0;
+        $.each(this.options.columns, function (index, column) {
+            if (column.field == param.field)
+                indexCell = index;
+        });
+        $(ele[indexCell]).html(param.value);
+
+    }
+
+
+    /**
+     * 所有方法
+     */
+    var allowedMethods = [
+        'getAllNodes', 'expand2', 'getRowByUniqueId', 'getSelect', 'updateCell', 'load', 'destroy'
+
+    ];
+
+    $.fn.treegridData = function (option) {
+        var value,
+            //获取参数
+            args = Array.prototype.slice.call(arguments, 1);
+
+        var $this = $(this),
+            data = $this.data('treegridData.table'),
+            options = $.extend({}, $.fn.treegridData.defaults, $this.data(),
+                typeof option === 'object' && option);
+        //如果是方法
+        if (typeof option === 'string') {
+            if ($.inArray(option, allowedMethods) < 0) {
+                throw new Error("Unknown method: " + option);
+            }
+
+            if (!data) {
+                return;
+            }
+            //执行方法
+            value = data[option].apply(data, args);
+
+            if (option === 'destroy') {
+                $this.removeData('treegridData.table');
+            }
+        }
+
+        if (!data) {
+            //不存在treegriddata，初始化treegriddata
+            $this.data('treegridData.table', (data = new TreegridData(this, options)));
+        }
+
+        return typeof value === 'undefined' ? this : value;
+    };
 
     $.fn.treegridData.defaults = {
         id: 'id',
         parentColumn: 'parentId',
         data: [],    //构造table的数据集合
         type: "GET", //请求数据的ajax类型
+        contentType: 'application/json',
         url: null,   //请求数据的ajax的url
         ajaxParams: {}, //请求数据的ajax的data属性
         expandColumn: null,//在哪一列上面显示展开按钮
@@ -683,10 +924,13 @@
         bordered: false,  //是否显示边框
         idField: 'id', //数据唯一标识
         columns: [],
+        tableCss: null,
+        groupBy: false, //是否分组
+        groupByField: null,
         expanderExpandedClass: 'glyphicon glyphicon-chevron-down',//展开的按钮的图标
         expanderCollapsedClass: 'glyphicon glyphicon-chevron-right',//缩起的按钮的图标
         rowStyle: function (row, index) { //行色彩
-            return {};
+            return false;
         },
         onLoadSuccess: function (data) {
             return false;
@@ -704,9 +948,7 @@
         },
         onEditableHidden: function (field, row, $el, reason) {
             return false;
-        },
-
+        }
     };
-
 
 })(jQuery);
