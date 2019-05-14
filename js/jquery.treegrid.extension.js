@@ -128,21 +128,21 @@
     TreegridData.prototype.initContainer = function () {
         this.$container = $([
             '<div class="treegridData-table">',
-            '<div class="fixed-table-container">',
-            '<div class="fixed-table-header"></div>',
-            '<div class="fixed-table-body"></div>',
+            '<div class="treegridData-table-container">',
+            '<div class="treegridData-table-header"></div>',
+            '<div class="treegridData-table-body"></div>',
             '</div>',
             '</div>'
         ].join(''));
         this.$container.insertAfter(this.$el);
-        this.$tableContainer = this.$container.find('.fixed-table-container');
-        this.$tableHeader = this.$container.find('.fixed-table-header');
-        this.$tableBody = this.$container.find('.fixed-table-body');
+        this.$tableContainer = this.$container.find('.treegridData-table-container');
+        this.$tableHeader = this.$container.find('.treegridData-table-header');
+        this.$tableBody = this.$container.find('.treegridData-table-body');
 
 
         this.$tableBody.append(this.$el);
         this.$container.after('<div class="clearfix"></div>');
-
+        this.$el.addClass("table-hover");
         this.$el.addClass(this.options.tableCss);
         if (this.options.striped) {
             this.$el.addClass('table-striped');
@@ -171,36 +171,51 @@
                     halign = '', // header align style
                     align = '', // body align style
                     style = '',
-                    class_ = sprintf(' class="%s"', column['class']),
+                    class_ = '',
                     unitWidth = 'px',
                     width = column.width;
-
                 if (column.width && typeof column.width === 'string') {
                     width = column.width.replace('%', '').replace('px', '');
                 }
-
+                if (column['class']) {
+                    class_ = sprintf(' class="%s"', column['class']);
+                }
                 halign = sprintf('text-align: %s; ', column.halign ? column.halign : column.align);
                 align = sprintf('text-align: %s; ', column.align);
                 style = sprintf('vertical-align: %s; ', column.valign);
                 style += sprintf('width: %s; ', width);
 
                 html.push('<th',
+                    sprintf(' %s', class_),
                     sprintf(' style="%s"', halign + align + style),
                     sprintf(' rowspan="%s"', column.rowspan),
                     sprintf(' colspan="%s"', column.colspan),
-                    '>');
+                    '><div>');
                 html.push(text);
-                html.push('</th>');
+                html.push('</div></th>');
             });
             html.push('</tr>');
             this.$header.html(html.join(''));
-
+        }
+        //是否固定表头
+        if (this.options.fixThead) {
+            /*******固定的逻辑基本就下面这些*********/
+            var scroll_y = 0;
+            this.$tableBody.css({maxHeight: "500px", overflowY: "auto"});
+            this.$header.css({backgroundColor: "aliceblue"});
+            this.$tableBody.on("scroll", function (e) {
+                //垂直滚动固定头
+                if (this.scrollTop != scroll_y) {
+                    scroll_y = this.scrollTop;
+                    this.querySelector("thead").style.transform = "translate3d(0," + this.scrollTop + "px,.1px)";
+                }
+            });
         }
     }
     /**
      * @description: 初始化数据
-     * @param {type} 
-     * @return: 
+     * @param {type}
+     * @return:
      */
     TreegridData.prototype.initData = function (data, type) {
         if (type === 'append') {
@@ -223,10 +238,10 @@
     }
 
     /**
-    * @description: 无法找到数据显示
-    * @param {type} 
-    * @return: 
-    */
+     * @description: 无法找到数据显示
+     * @param {type}
+     * @return:
+     */
     TreegridData.prototype.noDataShow = function (this_) {
         var html = [];
         this_.$body = this_.$el.find('>tbody');
@@ -245,8 +260,8 @@
 
     /**
      * @description: 初始化表体
-     * @param {type} 
-     * @return: 
+     * @param {type}
+     * @return:
      */
     TreegridData.prototype.initBody = function () {
         var that = this,
@@ -259,7 +274,6 @@
         if (this.options.groupBy) {
             //初始化分组信息
             this.initGroup();
-            console.log(this.groupbyMap);
         }
 
         //优化，初始化一个片段，片段不会引发前端渲染，因为所有的节点会被一次插入到文档中，而这个操作仅发生一个重渲染的操作
@@ -296,8 +310,8 @@
     }
 
     /**
-   * 初始化分组
-   */
+     * 初始化分组
+     */
     TreegridData.prototype.initGroup = function () {
         var that = this,
             data = this.getData();
@@ -321,10 +335,10 @@
      */
     TreegridData.prototype.calculateGroupby = function (column, row, groupByField, this_) {
         var group_ = {
-            total: row[column.field],
-            isUse: false,
-            children: []
-        },
+                total: row[column.field],
+                isUse: false,
+                children: []
+            },
             //分组名称相同并且父类代码相同的列进行行合并
             key_ = row[groupByField] + row[this_.options.parentColumn] + column.field
 
@@ -379,7 +393,7 @@
      * @param index 索引
      * @param parentIndex 父类索引
      * @param level 层数
-     * @return: 
+     * @return:
      */
     TreegridData.prototype.initGroupRow = function (item, index, parentIndex, level) {
         var that = this,
@@ -452,7 +466,7 @@
                     title_ = sprintf(' title="%s"', column.title);
                 }
                 if (column.formatter) {
-                    value = calculateObjectValue(column, column.formatter, [value_, item, index], value_)
+                    value = calculateObjectValue(column, column.formatter, [value_, item, index, group_.children.length], value_)
                 } else {
                     value = value_;
                 }
@@ -596,8 +610,8 @@
 
     /**
      * @description: ajax初始化
-     * @param {type} 
-     * @return: 
+     * @param {type}
+     * @return:
      */
     TreegridData.prototype.initServer = function (query, url) {
         var that = this,
@@ -645,8 +659,8 @@
 
     /**
      * @description: 重新加载
-     * @param {type} 
-     * @return: 
+     * @param {type}
+     * @return:
      */
     TreegridData.prototype.load = function (data) {
         this.initData(data);
@@ -656,8 +670,8 @@
 
     /**
      * @description: 初始化事件
-     * @param {type} 
-     * @return: 
+     * @param {type}
+     * @return:
      */
     TreegridData.prototype.initEvent = function () {
         var that = this;
@@ -684,49 +698,49 @@
         $.each(this.options.columns, function (i, column) {
             that.$tableBody.find('a[data-name="' + column.field + '"]').editable(column.editable)
                 .off('save').on('save', function (e, params) {
-                    var data = that.getData(),
-                        idField = $(this).parents('td[data-id]').data('id'),
-                        row;
-                    for (var i = 0, m = data.length; i < m; i++) {
-                        if (idField == data[i][that.options.idField]) {
-                            row = data[i];
-                            break;
-                        }
+                var data = that.getData(),
+                    idField = $(this).parents('td[data-id]').data('id'),
+                    row;
+                for (var i = 0, m = data.length; i < m; i++) {
+                    if (idField == data[i][that.options.idField]) {
+                        row = data[i];
+                        break;
                     }
-                    var oldValue = row[column.field];
-                    row[column.field] = params.submitValue;
-                    that.trigger($(this), 'onEditableSave', [column.field, row, oldValue, $(this)]);
-                });
+                }
+                var oldValue = row[column.field];
+                row[column.field] = params.submitValue;
+                that.trigger($(this), 'onEditableSave', [column.field, row, oldValue, $(this)]);
+            });
             that.$tableBody.find('a[data-name="' + column.field + '"]').editable(column.editable)
                 .off('shown').on('shown', function (e, editable) {
-                    var data = that.getData(),
-                        idField = $(this).parents('td[data-id]').data('id'),
-                        row;
-                    for (var i = 0, m = data.length; i < m; i++) {
-                        if (idField == data[i][that.options.idField]) {
-                            row = data[i];
-                            break;
-                        }
+                var data = that.getData(),
+                    idField = $(this).parents('td[data-id]').data('id'),
+                    row;
+                for (var i = 0, m = data.length; i < m; i++) {
+                    if (idField == data[i][that.options.idField]) {
+                        row = data[i];
+                        break;
                     }
-                    that.trigger($(this), 'onEditableShown', [column.field, row, $(this)]);
-                    // options.onEditableShown.apply(column.field, row, $(this));
-                    // that.trigger($.Event("onEditableShown"), column.field, row, $(this));
-                });
+                }
+                that.trigger($(this), 'onEditableShown', [column.field, row, $(this)]);
+                // options.onEditableShown.apply(column.field, row, $(this));
+                // that.trigger($.Event("onEditableShown"), column.field, row, $(this));
+            });
             that.$tableBody.find('a[data-name="' + column.field + '"]').editable(column.editable)
                 .off('hidden').on('hidden', function (e, reason) {
-                    var data = that.getData(),
-                        idField = $(this).parents('td[data-id]').data('id'),
-                        row;
-                    for (var i = 0, m = data.length; i < m; i++) {
-                        if (idField == data[i][that.options.idField]) {
-                            row = data[i];
-                            break;
-                        }
+                var data = that.getData(),
+                    idField = $(this).parents('td[data-id]').data('id'),
+                    row;
+                for (var i = 0, m = data.length; i < m; i++) {
+                    if (idField == data[i][that.options.idField]) {
+                        row = data[i];
+                        break;
                     }
-                    that.trigger($(this), 'onEditableHidden', [column.field, row, $(this)]);
-                    // options.onEditableHidden.apply(column.field, row, $(this));
-                    // that.trigger($.Event("onEditableHidden"), column.field, row, $(this));
-                });
+                }
+                that.trigger($(this), 'onEditableHidden', [column.field, row, $(this)]);
+                // options.onEditableHidden.apply(column.field, row, $(this));
+                // that.trigger($.Event("onEditableHidden"), column.field, row, $(this));
+            });
 
         });
         that.trigger($(this), 'onEditableInit');
@@ -735,8 +749,8 @@
 
     /**
      * @description:  销毁treegridDate
-     * @param {type} 
-     * @return: 
+     * @param {type}
+     * @return:
      */
     TreegridData.prototype.destroy = function () {
         this.$el.insertBefore(this.$container);
@@ -754,8 +768,8 @@
 
     /**
      * @description: 获取根目录
-     * @param {type} 
-     * @return: 
+     * @param {type}
+     * @return:
      */
     TreegridData.prototype.getRootNodes = function (data) {
         return data.filter(node => isVarEmpty(node[this.options.parentColumn]));
@@ -763,8 +777,8 @@
 
     /**
      * @description: 获取全部数据
-     * @param {type} 
-     * @return: 
+     * @param {type}
+     * @return:
      */
     TreegridData.prototype.getData = function () {
         return this.options.data;
@@ -772,8 +786,8 @@
 
     /**
      * @description:  获取全部节点
-     * @param {type} 
-     * @return: 
+     * @param {type}
+     * @return:
      */
     TreegridData.prototype.getAllNodes = function () {
         return this.treegrid('getAllNodes');
@@ -781,8 +795,8 @@
 
     /**
      * @description: 展开二级目录
-     * @param {type} 
-     * @return: 
+     * @param {type}
+     * @return:
      */
     TreegridData.prototype.expand2 = function () {
         this.treegrid('getAllNodes').each(function () {
@@ -794,8 +808,8 @@
 
     /**
      * @description: 根据唯一ID获取数据
-     * @param {type} 
-     * @return: 
+     * @param {type}
+     * @return:
      */
     TreegridData.prototype.getRowByUniqueId = function (param) {
         if (typeof param !== 'object')
@@ -815,12 +829,12 @@
 
     /**
      * @description: 获取选中数据
-     * @param {type} 
-     * @return: 
+     * @param {type}
+     * @return:
      */
     TreegridData.prototype.getSelect = function () {
         var selectRow,
-            data = this.getData()
+            data = this.getData(),
         that = this;
         var selectId = this.$body.find('.action').data('id');
         if (isVarEmpty(selectId)) {
@@ -839,7 +853,7 @@
     /**
      * @description: 更新列值
      * @param param 参数 {rowId:行ID,field:列属性,value:列值}
-     * @return: 
+     * @return:
      */
     TreegridData.prototype.updateCell = function (param) {
         if (typeof param !== 'object')
@@ -925,6 +939,7 @@
         idField: 'id', //数据唯一标识
         columns: [],
         tableCss: null,
+        fixThead: false, //是否固定表头
         groupBy: false, //是否分组
         groupByField: null,
         expanderExpandedClass: 'glyphicon glyphicon-chevron-down',//展开的按钮的图标
