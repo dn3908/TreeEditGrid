@@ -202,7 +202,7 @@
             /*******固定的逻辑基本就下面这些*********/
             var scroll_y = 0;
             this.$tableBody.css({maxHeight: "500px", overflowY: "auto"});
-            this.$header.css({backgroundColor: "aliceblue"});
+            this.$header.find("tr").css({backgroundColor: "aliceblue"});
             this.$tableBody.on("scroll", function (e) {
                 //垂直滚动固定头
                 if (this.scrollTop != scroll_y) {
@@ -477,7 +477,7 @@
                 }
                 //空值默认显示
                 value = typeof value === 'undefined' || value === null ?
-                    "-" : value;
+                    that.options.emptyValue : value;
 
                 //是否分组列
                 if (column.groupByField) {
@@ -586,7 +586,7 @@
             }
             //空值默认显示
             value = typeof value === 'undefined' || value === null ?
-                "-" : value;
+                that.options.emptyValue : value;
 
             html.push('<td ',
                 sprintf(' %s', id_),
@@ -634,7 +634,7 @@
                     that.load(data);
                 }
                 if (!that.options.expandAll) {
-                    that.treegrid('collapseAll');
+                    that.collapseAll();
                 }
             },
             beforeSend: function () {
@@ -674,13 +674,17 @@
      * @return:
      */
     TreegridData.prototype.initEvent = function () {
-        var that = this;
-        //绑定选中行变色
-        this.$tableBody.find('tr').on('click', function () {
-            $(this).addClass('action').css("background-color", "#e2f5ff")     //为选中项添加高亮
-                .siblings().removeClass('action').css("background-color", 'white')//去除其他项的高亮形式
-                .end();
-        });
+        var that = this, style = "";
+        //主要判断是否设置行色彩函数
+        style = calculateObjectValue(this.options, this.options.rowStyle, ["", ""], style);
+        if (!style) {
+            //绑定选中行变色
+            this.$tableBody.find('tr').on('click', function () {
+                $(this).addClass('action').css("background-color", "#e2f5ff")     //为选中项添加高亮
+                    .siblings().removeClass('action').css("background-color", 'white')//去除其他项的高亮形式
+                    .end();
+            });
+        }
 
         //初始化编辑事件
         if (!this.options.editable) {
@@ -723,8 +727,6 @@
                     }
                 }
                 that.trigger($(this), 'onEditableShown', [column.field, row, $(this)]);
-                // options.onEditableShown.apply(column.field, row, $(this));
-                // that.trigger($.Event("onEditableShown"), column.field, row, $(this));
             });
             that.$tableBody.find('a[data-name="' + column.field + '"]').editable(column.editable)
                 .off('hidden').on('hidden', function (e, reason) {
@@ -738,8 +740,6 @@
                     }
                 }
                 that.trigger($(this), 'onEditableHidden', [column.field, row, $(this)]);
-                // options.onEditableHidden.apply(column.field, row, $(this));
-                // that.trigger($.Event("onEditableHidden"), column.field, row, $(this));
             });
 
         });
@@ -790,7 +790,7 @@
      * @return:
      */
     TreegridData.prototype.getAllNodes = function () {
-        return this.treegrid('getAllNodes');
+        return this.$el.treegrid('getAllNodes');
     };
 
     /**
@@ -799,11 +799,29 @@
      * @return:
      */
     TreegridData.prototype.expand2 = function () {
-        this.treegrid('getAllNodes').each(function () {
+        this.$el.treegrid('getAllNodes').each(function () {
             if ($(this).treegrid('getDepth') < 2) {
                 $(this).treegrid('expand');
             }
         })
+    };
+
+    /**
+     * @description: 折叠所有
+     * @param {type}
+     * @return:
+     */
+    TreegridData.prototype.collapseAll = function () {
+        this.$el.treegrid('collapseAll');
+    };
+
+    /**
+     * @description: 展开所有
+     * @param {type}
+     * @return:
+     */
+    TreegridData.prototype.expandAll = function () {
+        this.$el.treegrid('expandAll');
     };
 
     /**
@@ -834,8 +852,8 @@
      */
     TreegridData.prototype.getSelect = function () {
         var selectRow,
-            data = this.getData(),
-        that = this;
+            data = this.getData();
+        var that = this;
         var selectId = this.$body.find('.action').data('id');
         if (isVarEmpty(selectId)) {
             return;
@@ -885,7 +903,7 @@
      * 所有方法
      */
     var allowedMethods = [
-        'getAllNodes', 'expand2', 'getRowByUniqueId', 'getSelect', 'updateCell', 'load', 'destroy'
+        'getAllNodes', 'expand2', 'getRowByUniqueId', 'getSelect', 'updateCell', 'load', 'destroy', 'getData', 'collapseAll', 'expandAll'
 
     ];
 
@@ -941,7 +959,7 @@
         tableCss: null,
         fixThead: false, //是否固定表头
         groupBy: false, //是否分组
-        groupByField: null,
+        emptyValue: "-",
         expanderExpandedClass: 'glyphicon glyphicon-chevron-down',//展开的按钮的图标
         expanderCollapsedClass: 'glyphicon glyphicon-chevron-right',//缩起的按钮的图标
         rowStyle: function (row, index) { //行色彩
