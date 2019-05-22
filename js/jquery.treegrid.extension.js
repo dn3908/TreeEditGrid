@@ -82,16 +82,17 @@
      * @param {*} value  值
      * @param {*} column  列
      * @param {*} row 行
+     * @param {*} options 可編輯列设置属性
      */
-    var calculateEditable = function (value, column, row, options) {
+    var calculateEditable = function (value, column, row, options, idField) {
         var _dont_edit_formatter = false;
-        if (column.editable.hasOwnProperty('noeditFormatter')) {
-            _dont_edit_formatter = column.editable.noeditFormatter(value, row, column);
+        if (options.hasOwnProperty('noeditFormatter')) {
+            _dont_edit_formatter = options.noeditFormatter(value, row, column);
         }
         if (_dont_edit_formatter === false) {
             return ['<a href="javascript:void(0)"',
                 ' data-name="' + column.field + '"',
-                ' data-pk="' + row[options.idField] + '"',
+                ' data-pk="' + row[idField] === 'undefined' ? '' : row[idField] + '"',
                 ' data-value="' + value + '"',
                 '>' + '</a>'
             ].join('');
@@ -116,6 +117,7 @@
      */
     TreegridData.prototype.init = function () {
         this.initContainer();
+        this.initTable();
         this.initHeader();
         this.initData();
         this.initBody();
@@ -152,28 +154,124 @@
         }
     }
 
+    // http://jsfiddle.net/wenyi/47nz7ez9/3/
+    var setFieldIndex = function (columns) {
+        var i, j, k,
+            totalCol = 0,
+            flag = [];
+
+        for (i = 0; i < columns[0].length; i++) {
+            totalCol += columns[0][i].colspan || 1;
+        }
+
+        for (i = 0; i < columns.length; i++) {
+            flag[i] = [];
+            for (j = 0; j < totalCol; j++) {
+                flag[i][j] = false;
+            }
+        }
+
+        for (i = 0; i < columns.length; i++) {
+            for (j = 0; j < columns[i].length; j++) {
+                var r = columns[i][j],
+                    rowspan = r.rowspan || 1,
+                    colspan = r.colspan || 1,
+                    index = $.inArray(false, flag[i]);
+
+                if (colspan === 1) {
+                    r.fieldIndex = index;
+                    // when field is undefined, use index instead
+                    if (typeof r.field === 'undefined') {
+                        r.field = index;
+                    }
+                }
+
+                for (k = 0; k < rowspan; k++) {
+                    flag[i + k][index] = true;
+                }
+                for (k = 0; k < colspan; k++) {
+                    flag[i][index + k] = true;
+                }
+            }
+        }
+    };
+
 
     /**
-     * 初始化表体表头
+     * 初始化表
      *
      */
-    TreegridData.prototype.initHeader = function () {
-        var html = [];
+    TreegridData.prototype.initTable = function () {
+        var html = [], that = this, columns = [];
         this.$header = this.$el.find('>thead');
-
         //是否存在表头
         if (!this.$header.length) {
-            //不存在,创建表头
-            this.$header = $('<thead></thead>').appendTo(this.$el);
+            //不存在创建一个
+            this.$header = $('<thead></thead>').appendTo(this.$tableHeader);
+        }
+
+        //存在表头 获取表头列信息
+        this.$header.find('tr').each(function () {
+            var column = [];
+            $(this).find('th').each(function () {
+                column.push($.extend({}, {
+                    title: $(this).html(),
+                    'class': $(this).attr('class'),
+                    titleTooltip: $(this).attr('title'),
+                    rowspan: $(this).attr('rowspan') ? +$(this).attr('rowspan') : undefined,
+                    colspan: $(this).attr('colspan') ? +$(this).attr('colspan') : undefined
+                }));
+            });
+            columns.push(column);
+        });
+
+        this.columns = [];
+        this.headerColumns = [];
+
+        //分解緩存列信息增加列索引
+        if (Array.isArray(columns) && columns.length !== 0) {
+            setFieldIndex(columns);
+        }
+        $.each(columns, function (i, columnsInfo) {
+            $.each(columnsInfo, function (j, column) {
+                $.each(that.options.columns, function (z, columnInfo) {
+                    if (column.fieldIndex == z) {
+                        //深度拷贝
+                        $.extend(true, column, columnInfo);
+                        that.columns[column.fieldIndex] = column;
+                    }
+
+                });
+            })
+        });
+        //所有列信息
+        this.headerColumns = columns;
+    }
+
+
+    TreegridData.prototype.initHeader = function () {
+        var that = this,
+            html = [];
+        this.header = {
+            fields: [],
+            styles: [],
+            classes: [],
+            formatters: [],
+            editables: [],
+            groupByFields: []
+
+        };
+        $.each(this.headerColumns, function (i, columns) {
             html.push('<tr>');
-            $.each(this.options.columns, function (index, column) {
+            $.each(columns, function (j, column) {
                 var text = column.title,
                     halign = '', // header align style
                     align = '', // body align style
                     style = '',
-                    class_ = '',
+                    class_ = sprintf(' class="%s"', column['class']),
                     unitWidth = 'px',
                     width = column.width;
+
                 if (column.width && typeof column.width === 'string') {
                     width = column.width.replace('%', '').replace('px', '');
                 }
@@ -183,7 +281,20 @@
                 halign = sprintf('text-align: %s; ', column.halign ? column.halign : column.align);
                 align = sprintf('text-align: %s; ', column.align);
                 style = sprintf('vertical-align: %s; ', column.valign);
-                style += sprintf('width: %s; ', width);
+                style += sprintf('width: %s', !width ?
+                    '36px' : (width ? width + unitWidth : undefined));
+
+
+
+                //具有索引的列信息
+                if (typeof column.fieldIndex !== 'undefined') {
+                    that.header.fields[column.fieldIndex] = column.field;
+                    that.header.styles[column.fieldIndex] = align + style;
+                    that.header.classes[column.fieldIndex] = class_;
+                    that.header.formatters[column.fieldIndex] = column.formatter;
+                    that.header.editables[column.fieldIndex] = column.editable;
+                    that.header.groupByFields[column.fieldIndex] = column.groupByField;
+                }
 
                 html.push('<th',
                     sprintf(' %s', class_),
@@ -191,18 +302,21 @@
                     sprintf(' rowspan="%s"', column.rowspan),
                     sprintf(' colspan="%s"', column.colspan),
                     '><div>');
+
                 html.push(text);
                 html.push('</div></th>');
+
             });
             html.push('</tr>');
-            this.$header.html(html.join(''));
-        }
+        });
+        this.$header.html(html.join(''));
+
         //是否固定表头
         if (this.options.fixThead) {
             /*******固定的逻辑基本就下面这些*********/
             var scroll_y = 0;
-            this.$tableBody.css({maxHeight: "500px", overflowY: "auto"});
-            this.$header.find("tr").css({backgroundColor: "aliceblue"});
+            this.$tableBody.css({ maxHeight: "768px", overflowY: "auto" });
+            this.$header.find("tr").css({ backgroundColor: "aliceblue" });
             this.$tableBody.on("scroll", function (e) {
                 //垂直滚动固定头
                 if (this.scrollTop != scroll_y) {
@@ -211,6 +325,7 @@
                 }
             });
         }
+
     }
     /**
      * @description: 初始化数据
@@ -226,7 +341,6 @@
             this.data = data || this.options.data;
         }
 
-        // Fix #839 Records deleted when adding new row on filtered table
         if (type === 'append') {
             this.options.data = this.options.data.concat(data);
         } else if (type === 'prepend') {
@@ -247,7 +361,7 @@
         this_.$body = this_.$el.find('>tbody');
         html.push('<tr>');
         html.push('<td ',
-            sprintf(' %s', sprintf(' colspan="%s"', this_.options.columns.length)),
+            sprintf(' %s', sprintf(' colspan="%s"', this_.columns.length)),
             sprintf(' %s', sprintf(' style="%s"', 'text-align:center')),
             '>',
             '无法找到数据',
@@ -265,7 +379,6 @@
      */
     TreegridData.prototype.initBody = function () {
         var that = this,
-            html = [],
             data = this.getData(), j = 0;
         this.$body = this.$el.find('>tbody');
         if (!this.$body.length) {
@@ -335,10 +448,10 @@
      */
     TreegridData.prototype.calculateGroupby = function (column, row, groupByField, this_) {
         var group_ = {
-                total: row[column.field],
-                isUse: false,
-                children: []
-            },
+            total: row[column.field],
+            isUse: false,
+            children: []
+        },
             //分组名称相同并且父类代码相同的列进行行合并
             key_ = row[groupByField] + row[this_.options.parentColumn] + column.field
 
@@ -542,59 +655,43 @@
             sprintf(' data-level="%s"', level),
             '>'
         );
-        $.each(this.options.columns, function (index, column) {
-            var text = '',
-                value_ = getItemField(item, column.field),
+        $.each(this.header.fields, function (j, field) {
+            var value_ = getItemField(item, field),
                 value = '',
                 id_ = '',
-                rowspan_ = '',
-                colspan_ = '',
                 class_ = '',
-                title_ = '',
+                csses = [],
                 style_ = '',
-                editable_ = '';
-            if (index === 0) {
+                editable_ = '',
+                column = that.columns[j];
+
+            if (j === 0) {
                 style_ = "padding-left:" + (indent * level) + "px;";
             }
-            if (column.style) {
-                style_ += column.style;
+            if (that.header.styles[j]) {
+                style = sprintf('style="%s"', csses.concat(that.header.styles[j]).concat(style_).join('; '));
             }
-            if (column.field) {
-                id_ = sprintf(' id="%s"', column.field);
+            if (that.header.classes[j]) {
+                class_ = sprintf(' class="%s"', that.header.classes[j]);
             }
-            if (column.rowspan) {
-                rowspan_ = sprintf(' rowspan="%s"', column.rowspan);
-            }
-            if (column.colspan) {
-                colspan_ = sprintf(' colspan="%s"', column.colspan);
-            }
-            if (column.classes) {
-                class_ = sprintf(' class="%s"', column.classes);
-            }
-            if (column.title) {
-                title_ = sprintf(' title="%s"', column.title);
-            }
-            if (column.formatter) {
-                value = calculateObjectValue(column, column.formatter, [value_, item, index], value_)
+            if (that.header.formatters[j]) {
+                value = calculateObjectValue(column, that.header.formatters[j], [value_, item, index], value_)
             } else {
                 value = value_;
             }
             //是否編輯
-            if (column.editable) {
+            if (that.header.editables[j]) {
                 editable_ = sprintf(' data-id="%s"', item[that.options.idField]);
-                value = calculateEditable(value, column, item, that.options);
+                value = calculateEditable(value, column, item, that.header.editables[j], that.options.idField);
+
             }
             //空值默认显示
             value = typeof value === 'undefined' || value === null ?
                 that.options.emptyValue : value;
-
             html.push('<td ',
                 sprintf(' %s', id_),
-                sprintf(' %s', sprintf(' style="%s"', style_)),
+                sprintf(' %s', style),
                 sprintf(' %s', class_),
-                sprintf(' %s', rowspan_),
-                sprintf(' %s', colspan_),
-                sprintf(' %s', title_),
                 sprintf(' %s', editable_),
                 '>',
                 value,
@@ -702,45 +799,45 @@
         $.each(this.options.columns, function (i, column) {
             that.$tableBody.find('a[data-name="' + column.field + '"]').editable(column.editable)
                 .off('save').on('save', function (e, params) {
-                var data = that.getData(),
-                    idField = $(this).parents('td[data-id]').data('id'),
-                    row;
-                for (var i = 0, m = data.length; i < m; i++) {
-                    if (idField == data[i][that.options.idField]) {
-                        row = data[i];
-                        break;
+                    var data = that.getData(),
+                        idField = $(this).parents('td[data-id]').data('id'),
+                        row;
+                    for (var i = 0, m = data.length; i < m; i++) {
+                        if (idField == data[i][that.options.idField]) {
+                            row = data[i];
+                            break;
+                        }
                     }
-                }
-                var oldValue = row[column.field];
-                row[column.field] = params.submitValue;
-                that.trigger($(this), 'onEditableSave', [column.field, row, oldValue, $(this)]);
-            });
+                    var oldValue = row[column.field];
+                    row[column.field] = params.submitValue;
+                    that.trigger($(this), 'onEditableSave', [column.field, row, oldValue, $(this)]);
+                });
             that.$tableBody.find('a[data-name="' + column.field + '"]').editable(column.editable)
                 .off('shown').on('shown', function (e, editable) {
-                var data = that.getData(),
-                    idField = $(this).parents('td[data-id]').data('id'),
-                    row;
-                for (var i = 0, m = data.length; i < m; i++) {
-                    if (idField == data[i][that.options.idField]) {
-                        row = data[i];
-                        break;
+                    var data = that.getData(),
+                        idField = $(this).parents('td[data-id]').data('id'),
+                        row;
+                    for (var i = 0, m = data.length; i < m; i++) {
+                        if (idField == data[i][that.options.idField]) {
+                            row = data[i];
+                            break;
+                        }
                     }
-                }
-                that.trigger($(this), 'onEditableShown', [column.field, row, $(this)]);
-            });
+                    that.trigger($(this), 'onEditableShown', [column.field, row, $(this)]);
+                });
             that.$tableBody.find('a[data-name="' + column.field + '"]').editable(column.editable)
                 .off('hidden').on('hidden', function (e, reason) {
-                var data = that.getData(),
-                    idField = $(this).parents('td[data-id]').data('id'),
-                    row;
-                for (var i = 0, m = data.length; i < m; i++) {
-                    if (idField == data[i][that.options.idField]) {
-                        row = data[i];
-                        break;
+                    var data = that.getData(),
+                        idField = $(this).parents('td[data-id]').data('id'),
+                        row;
+                    for (var i = 0, m = data.length; i < m; i++) {
+                        if (idField == data[i][that.options.idField]) {
+                            row = data[i];
+                            break;
+                        }
                     }
-                }
-                that.trigger($(this), 'onEditableHidden', [column.field, row, $(this)]);
-            });
+                    that.trigger($(this), 'onEditableHidden', [column.field, row, $(this)]);
+                });
 
         });
         that.trigger($(this), 'onEditableInit');
@@ -955,7 +1052,7 @@
         striped: false,   //是否各行渐变色
         bordered: false,  //是否显示边框
         idField: 'id', //数据唯一标识
-        columns: [],
+        columns: [[]],
         tableCss: null,
         fixThead: false, //是否固定表头
         groupBy: false, //是否分组

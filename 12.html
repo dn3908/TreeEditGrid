@@ -1,0 +1,108 @@
+<html>
+
+<head>
+    <style type="text/css">
+        table {
+            width: 100%;
+            text-align: left;
+            min-width: 610px;
+        }
+
+        tr {
+            height: 30px;
+            padding-top: 10px
+        }
+
+        tbody {
+            height: 150px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        th,
+        td,
+        tr,
+        thead,
+        tbody {
+            display: block;
+        }
+
+        td,
+        th {
+            float: left;
+        }
+
+        td:nth-child(1),
+        th:nth-child(1) {
+            width: 20%;
+        }
+
+        td:nth-child(2),
+        th:nth-child(2) {
+            width: 20%;
+            float: left;
+        }
+
+        td:nth-child(3),
+        th:nth-child(3) {
+            width: 59%;
+            float: left;
+        }
+
+        /* some colors */
+        thead {
+            background-color: #333333;
+            color: #fdfdfd;
+        }
+
+        table tbody tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+</head>
+
+<body>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Color</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Apple</td>
+                <td>Red</td>
+                <td>These are red.</td>
+            </tr>
+            <tr>
+                <td>Pear</td>
+                <td>Green</td>
+                <td>These are green.</td>
+            </tr>
+            <tr>
+                <td>Grape</td>
+                <td>Purple / Green</td>
+                <td>These are purple and green.</td>
+            </tr>
+            <tr>
+                <td>Orange</td>
+                <td>Orange</td>
+                <td>These are orange.</td>
+            </tr>
+            <tr>
+                <td>Banana</td>
+                <td>Yellow</td>
+                <td>These are yellow.</td>
+            </tr>
+            <tr>
+                <td>Kiwi</td>
+                <td>Green</td>
+                <td>These are green.</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+
+</html>
