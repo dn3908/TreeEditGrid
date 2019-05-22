@@ -219,12 +219,12 @@
                     'class': $(this).attr('class'),
                     titleTooltip: $(this).attr('title'),
                     rowspan: $(this).attr('rowspan') ? +$(this).attr('rowspan') : undefined,
-                    colspan: $(this).attr('colspan') ? +$(this).attr('colspan') : undefined
+                    colspan: $(this).attr('colspan') ? +$(this).attr('colspan') : undefined,
+                    align: $(this).attr('align')
                 }));
             });
             columns.push(column);
         });
-
         this.columns = [];
         this.headerColumns = [];
 
