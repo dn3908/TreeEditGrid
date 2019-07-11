@@ -432,8 +432,8 @@
         this.groupbyMap.clear();
         $.each(data, function (index, row) {
             $.each(that.options.columns, function (index, column) {
-                //列具有分组属性
-                if (column.groupByField) {
+                //列具有分组属性并且分组值不能为null
+                if (column.groupByField && !isVarEmpty(row[column.groupByField])) {
                     that.calculateGroupby(column, row, column.groupByField, that);
                 }
             });
@@ -518,7 +518,7 @@
             children = [];
         //获取当前分组集合
         $.each(this.options.columns, function (colindex, column) {
-            if (column.groupByField) {
+            if (column.groupByField && !isVarEmpty(item[column.groupByField])) {
                 children = that.groupbyMap.get(item[column.groupByField] + item[that.options.parentColumn] + column.field).children;
                 isUser_ = that.groupbyMap.get(item[column.groupByField] + item[that.options.parentColumn] + column.field).isUse;
                 return false
@@ -526,15 +526,21 @@
 
         })
 
+        //如果没有子集，证明不在分组MAP中,默认一行
+        if (children.length == 0) {
+            children.push(item);
+        }
+
         $.each(children, function (childrenIndex, row) {
+            if (isUser_) {
+                return true;
+            }
             if (parentIndex) {
                 class_ = 'treegrid-' + (index) + ' treegrid-parent-' + parentIndex;
             } else {
                 class_ = 'treegrid-' + (index);
             }
-            if (isUser_) {
-                return true;
-            }
+            
             html.push('<tr',
                 sprintf(' class="%s"', class_),
                 sprintf(' style="%s"', style ? style : ''),
@@ -566,8 +572,10 @@
                 if (column.field) {
                     id_ = sprintf(' id="%s"', column.field);
                 }
-                if (column.groupByField) {
+                if (column.groupByField && !isVarEmpty(row[column.groupByField])) {
                     rowspan_ = sprintf(' rowspan="%s"', group_.children.length);
+                } else {
+                    rowspan_ = sprintf(' rowspan="%s"', 1);
                 }
                 if (column.colspan) {
                     colspan_ = sprintf(' colspan="%s"', column.colspan);
@@ -579,7 +587,11 @@
                     title_ = sprintf(' title="%s"', column.title);
                 }
                 if (column.formatter) {
-                    value = calculateObjectValue(column, column.formatter, [value_, item, index, group_.children.length], value_)
+                    if (column.groupByField && !isVarEmpty(row[column.groupByField])) {
+                        value = calculateObjectValue(column, column.formatter, [value_, item, index, group_.children.length], value_)
+                    } else {
+                        value = calculateObjectValue(column, column.formatter, [value_, item, index, 1], value_)
+                    }
                 } else {
                     value = value_;
                 }
@@ -593,7 +605,7 @@
                     that.options.emptyValue : value;
 
                 //是否分组列
-                if (column.groupByField) {
+                if (column.groupByField && !isVarEmpty(row[column.groupByField])) {
                     if (!group_.isUse) {
                         //标识已经执行分组
                         group_.isUse = true;
