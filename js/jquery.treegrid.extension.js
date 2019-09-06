@@ -282,7 +282,7 @@
                 align = sprintf('text-align: %s; ', column.align);
                 style = sprintf('vertical-align: %s; ', column.valign);
                 style += sprintf('width: %s', !width ?
-                    '36px' : (width ? width + unitWidth : undefined));
+                    '200px' : (width ? width + unitWidth : undefined));
 
 
 
@@ -296,7 +296,7 @@
                     that.header.groupByFields[column.fieldIndex] = column.groupByField;
                 }
 
-                html.push('<th',
+                html.push('<td',
                     sprintf(' %s', class_),
                     sprintf(' style="%s"', halign + align + style),
                     sprintf(' rowspan="%s"', column.rowspan),
@@ -304,27 +304,35 @@
                     '><div>');
 
                 html.push(text);
-                html.push('</div></th>');
+                html.push('</div></td>');
 
             });
             html.push('</tr>');
         });
-        this.$header.html(html.join(''));
+        //是否存在表头
+        if (this.$header.length) {
+            //移除当前列头
+            this.$header.remove();
+        }
+        var table = $('<table></table>').append(html.join(''));
+        this.$tableHeader.html(table);
+
+        // this.$header.html(html.join(''));
 
         //是否固定表头
-        if (this.options.fixThead) {
-            /*******固定的逻辑基本就下面这些*********/
-            var scroll_y = 0;
-            this.$tableBody.css({ maxHeight: "768px", overflowY: "auto" });
-            this.$header.find("tr").css({ backgroundColor: "aliceblue" });
-            this.$tableBody.on("scroll", function (e) {
-                //垂直滚动固定头
-                if (this.scrollTop != scroll_y) {
-                    scroll_y = this.scrollTop;
-                    this.querySelector("thead").style.transform = "translate3d(0," + this.scrollTop + "px,.1px)";
-                }
-            });
-        }
+        // if (this.options.fixThead) {
+            // /*******固定的逻辑基本就下面这些*********/
+            // var scroll_y = 0;
+            // this.$tableBody.css({ maxHeight: "768px", overflowY: "auto" });
+            // this.$header.find("tr").css({ backgroundColor: "aliceblue" });
+            // this.$tableBody.on("scroll", function (e) {
+            //     //垂直滚动固定头
+            //     if (this.scrollTop != scroll_y) {
+            //         scroll_y = this.scrollTop;
+            //         this.querySelector("thead").style.transform = "translate3d(0," + this.scrollTop + "px,.1px)";
+            //     }
+            // });
+        // }
 
     }
     /**
@@ -559,12 +567,12 @@
                     colspan_ = '',
                     class_ = '',
                     title_ = '',
-                    style_ = '',
+                    style_ = 'width:200px',
                     editable_ = '',
                     group_ = that.groupbyMap.get(row[column.groupByField] + row[that.options.parentColumn] + column.field);
 
                 if (index === 0) {
-                    style_ = "padding-left:" + (indent * level) + "px;";
+                    style_ = "padding-left:" + (indent * level) + "px;width:200px";
                 }
                 if (column.style) {
                     style_ += column.style;
@@ -661,7 +669,7 @@
         }
         html.push('<tr',
             sprintf(' class="%s"', class_),
-            sprintf(' style="%s"', style ? style : ''),
+            sprintf(' style="%s"', style ? style : 'width:200px'),
             sprintf(' row-id="%s"', item[this.options.idField]),
             sprintf(' data-index="%s"', index),
             sprintf(' data-level="%s"', level),
@@ -678,7 +686,7 @@
                 column = that.columns[j];
 
             if (j === 0) {
-                style_ = "padding-left:" + (indent * level) + "px;";
+                style_ = "padding-left:" + (indent * level) + "px;width:200px";
             }
             if (that.header.styles[j]) {
                 style = sprintf('style="%s"', csses.concat(that.header.styles[j]).concat(style_).join('; '));
