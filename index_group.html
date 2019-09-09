@@ -58,7 +58,7 @@
 </head>
 
 <body>
-    <table id="contractGrid" style="table-layout: fixed;" width="95%">
+    <table id="contractGrid" style="table-layout: fixed;">
         <thead id="contractThead">
             <tr>
                 <th rowspan="2">核算科目编码</th>
@@ -112,7 +112,8 @@
             groupBy: true,
             // expandAll: false,  //是否全部展开
             columns: [{
-                field: 'standardTitleCode'
+                field: 'standardTitleCode',
+                width: 400
             }, {
                 field: 'standardTitleName'
             }, {

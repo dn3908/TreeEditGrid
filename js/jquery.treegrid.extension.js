@@ -221,7 +221,7 @@
                     rowspan: $(this).attr('rowspan') ? +$(this).attr('rowspan') : undefined,
                     colspan: $(this).attr('colspan') ? +$(this).attr('colspan') : undefined,
                     align: $(this).attr('align'),
-                    style:$(this).attr('style')
+                    style: $(this).attr('style')
                 }));
             });
             columns.push(column);
@@ -322,17 +322,17 @@
 
         //是否固定表头
         // if (this.options.fixThead) {
-            // /*******固定的逻辑基本就下面这些*********/
-            // var scroll_y = 0;
-            // this.$tableBody.css({ maxHeight: "768px", overflowY: "auto" });
-            // this.$header.find("tr").css({ backgroundColor: "aliceblue" });
-            // this.$tableBody.on("scroll", function (e) {
-            //     //垂直滚动固定头
-            //     if (this.scrollTop != scroll_y) {
-            //         scroll_y = this.scrollTop;
-            //         this.querySelector("thead").style.transform = "translate3d(0," + this.scrollTop + "px,.1px)";
-            //     }
-            // });
+        // /*******固定的逻辑基本就下面这些*********/
+        // var scroll_y = 0;
+        // this.$tableBody.css({ maxHeight: "768px", overflowY: "auto" });
+        // this.$header.find("tr").css({ backgroundColor: "aliceblue" });
+        // this.$tableBody.on("scroll", function (e) {
+        //     //垂直滚动固定头
+        //     if (this.scrollTop != scroll_y) {
+        //         scroll_y = this.scrollTop;
+        //         this.querySelector("thead").style.transform = "translate3d(0," + this.scrollTop + "px,.1px)";
+        //     }
+        // });
         // }
 
     }
@@ -549,7 +549,7 @@
             } else {
                 class_ = 'treegrid-' + (index);
             }
-            
+
             html.push('<tr',
                 sprintf(' class="%s"', class_),
                 sprintf(' style="%s"', style ? style : ''),
@@ -568,15 +568,15 @@
                     colspan_ = '',
                     class_ = '',
                     title_ = '',
-                    style_ = this.headerColumns[colindex], //获取表头样式
+                    style_ = '',
+                    csses = [],
                     editable_ = '',
                     group_ = that.groupbyMap.get(row[column.groupByField] + row[that.options.parentColumn] + column.field);
-
                 if (index === 0) {
                     style_ = "padding-left:" + (indent * level) + "px;";
                 }
-                if (column.style) {
-                    style_ += column.style;
+                if (that.header.styles[colindex]) {
+                    style = sprintf('style="%s"', csses.concat(that.header.styles[colindex]).join('; '));
                 }
                 if (column.field) {
                     id_ = sprintf(' id="%s"', column.field);
@@ -620,7 +620,7 @@
                         group_.isUse = true;
                         html.push('<td ',
                             sprintf(' %s', id_),
-                            sprintf(' %s', sprintf(' style="%s"', style_)),
+                            sprintf(' %s', style),
                             sprintf(' %s', class_),
                             sprintf(' %s', rowspan_),
                             sprintf(' %s', colspan_),
@@ -634,7 +634,7 @@
                 } else {
                     html.push('<td ',
                         sprintf(' %s', id_),
-                        sprintf(' %s', sprintf(' style="%s"', style_)),
+                        sprintf(' %s', style),
                         sprintf(' %s', class_),
                         sprintf(' %s', rowspan_),
                         sprintf(' %s', colspan_),
