@@ -58,10 +58,10 @@
 </head>
 
 <body>
-    <table id="contractGrid" style="table-layout: fixed;" width="95%">
+    <table id="contractGrid" style="table-layout: fixed;">
         <thead id="contractThead">
             <tr>
-                <th>科目名称</th>
+                <th >科目名称</th>
                 <th>目标成本</th>
             </tr>
         </thead>
@@ -98,15 +98,17 @@
             url: 'js/josn1.json',
             expandColumn: null,//在哪一列上面显示展开按钮
             bordered: true,  //是否显示边框
-            indent: 50,
+            indent: 10,
             // expandAll: false,  //是否全部展开
             editable: true,
             contextmenu: true,
             menuEl: '.menu',
             columns: [{
                 field: 'name',
+                width: 300,
             }, {
                 field: 'totalMoney',
+                width:300,
                 editable: {
                     type: 'text',
                     title: '金额',

@@ -220,7 +220,8 @@
                     titleTooltip: $(this).attr('title'),
                     rowspan: $(this).attr('rowspan') ? +$(this).attr('rowspan') : undefined,
                     colspan: $(this).attr('colspan') ? +$(this).attr('colspan') : undefined,
-                    align: $(this).attr('align')
+                    align: $(this).attr('align'),
+                    style:$(this).attr('style')
                 }));
             });
             columns.push(column);
@@ -282,7 +283,7 @@
                 align = sprintf('text-align: %s; ', column.align);
                 style = sprintf('vertical-align: %s; ', column.valign);
                 style += sprintf('width: %s', !width ?
-                    '200px' : (width ? width + unitWidth : undefined));
+                    '36px' : (width ? width + unitWidth : undefined));
 
 
 
@@ -314,7 +315,7 @@
             //移除当前列头
             this.$header.remove();
         }
-        var table = $('<table></table>').append(html.join(''));
+        var table = $('<table style="table-layout: fixed;"></table>').append(html.join(''));
         this.$tableHeader.html(table);
 
         // this.$header.html(html.join(''));
@@ -567,12 +568,12 @@
                     colspan_ = '',
                     class_ = '',
                     title_ = '',
-                    style_ = 'width:200px',
+                    style_ = this.headerColumns[colindex], //获取表头样式
                     editable_ = '',
                     group_ = that.groupbyMap.get(row[column.groupByField] + row[that.options.parentColumn] + column.field);
 
                 if (index === 0) {
-                    style_ = "padding-left:" + (indent * level) + "px;width:200px";
+                    style_ = "padding-left:" + (indent * level) + "px;";
                 }
                 if (column.style) {
                     style_ += column.style;
@@ -669,8 +670,8 @@
         }
         html.push('<tr',
             sprintf(' class="%s"', class_),
-            sprintf(' style="%s"', style ? style : 'width:200px'),
-            sprintf(' row-id="%s"', item[this.options.idField]),
+            sprintf(' style="%s"', style ? style : ''),
+            sprintf(' row-id="%s"', item[this.options.idFilde]),
             sprintf(' data-index="%s"', index),
             sprintf(' data-level="%s"', level),
             '>'
@@ -686,7 +687,7 @@
                 column = that.columns[j];
 
             if (j === 0) {
-                style_ = "padding-left:" + (indent * level) + "px;width:200px";
+                style_ = "padding-left:" + (indent * level) + "px;";
             }
             if (that.header.styles[j]) {
                 style = sprintf('style="%s"', csses.concat(that.header.styles[j]).concat(style_).join('; '));
