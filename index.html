@@ -58,6 +58,7 @@
 </head>
 
 <body>
+    <button onclick="resh()">aaaa</button>
     <table id="contractGrid" style="table-layout: fixed;">
         <thead id="contractThead">
             <tr>
@@ -125,6 +126,49 @@
                 }
             }]
         });
+
+        function resh(){
+            if (contractGrid != undefined) {
+                contractGrid.treegridData('destroy');
+            }
+
+         contractGrid = $('#contractGrid').treegridData({
+            id: 'accoutCode',
+            parentColumn: 'parentCode',
+            thead: '#contractThead',
+            // data :json,
+            type: "post", //请求数据的ajax类型
+            url: 'js/josn1.json',
+            expandColumn: null,//在哪一列上面显示展开按钮
+            bordered: true,  //是否显示边框
+            indent: 10,
+            // expandAll: false,  //是否全部展开
+            editable: true,
+            contextmenu: true,
+            menuEl: '.menu',
+            columns: [{
+                field: 'name',
+                width: 300,
+            }, {
+                field: 'totalMoney',
+                width:300,
+                editable: {
+                    type: 'text',
+                    title: '金额',
+                    showbuttons: false,
+                    onblur: "submit",
+                    mode: "inline",
+                    validate: function (v) {
+                        if (!v) return '金额不能为空';
+                        //正则校验输入格式：最多两位小数。
+                        //  let patrn = /^([1-9]\d*\.\d{1,2}|0\.\d[1-9]|[1-9]\d*)$/;
+                        let patrn = /^[0-9]+.?[0-9]*$/;
+                        if (!patrn.test(v)) return '金额只能为正实数';
+                    },
+                }
+            }]
+        });
+        }
 
 
     </script>

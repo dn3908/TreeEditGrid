@@ -313,7 +313,7 @@
         //是否存在表头
         if (this.$header.length) {
             //移除当前列头
-            this.$header.remove();
+            this.$header.css('display','none');
         }
         var table = $('<table style="table-layout: fixed;"></table>').append(html.join(''));
         this.$tableHeader.html(table);
