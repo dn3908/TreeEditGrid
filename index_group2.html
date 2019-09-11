@@ -44,29 +44,11 @@
         color: #0AAF88;
     }
 
+    table{border-collapse: collapse;border: 1px solid #9CF;max-width: none!important;}
+table thead td,table.set_border th{font-weight:bold;background-color:White;}
+table tr:nth-child(even){background-color:#EAF2D3;}
+table td,table.border th{border:1px solid #C3C3C3;}
 
-    /*表头单元格(这里将表头单元格的样式设置成了和单元格一样,实际中可以改变)*/
-    table tr th {
-        border: 1px solid #FF00FF;
-        overflow: hidden;
-        /*超出长度的内容不显示*/
-        word-wrap: break-word; /*内容将在边界内换行,这里显示省略号,所以不需要了 */
-        /* word-break: break-all; */
-        /*字内断开*/
-        text-overflow: ellipsis;
-        /*当对象内文本溢出时显示省略标记（…），省略标记插入的位置是最后一个字符*/
-        white-space: nowrap;
-    }
-
-    /*单元格样式*/
-    table tr td {
-        border: 1px solid #FF00FF;
-        overflow: hidden;
-         word-wrap: break-word; /*内容将在边界内换行,这里显示省略号,所以不需要了 */
-        /* word-break: break-all; */
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
 
 </style>
 
@@ -89,7 +71,7 @@
                 <th rowspan="3">合约名称</th>
                 <th rowspan="3">目标成本</th>
                 <th colspan="10" align="center">合约规划</th>
-                <th colspan="3" align="center">合约核算部分</th>
+                <th colspan="3"  align="center">合约核算部分</th>
                 <th rowspan="3">计价方式</th>
                 <th rowspan="3">合约方式</th>
                 <th rowspan="3">合约类型</th>
@@ -150,37 +132,52 @@
             expandAll: true,  //是否全部展开
             columns: [{
                 field: 'name',
-                width: 300
+                width: 420
             }, {
-                field: 'planAmountTotal'
+                field: 'planAmountTotal',
+                width: 100
             }, {
-                field: 'standardTitleCode'
+                field: 'standardTitleCode',
+                width: 100
             }, {
-                field: 'standardTitleName'
+                field: 'standardTitleName',
+                width: 100
             }, {
-                field: 'subjectName'
+                field: 'subjectName',
+                width: 100
             }, {
-                field: 'beforePlanAmountTotal'
+                field: 'beforePlanAmountTotal',
+                width: 100
             }, {
-                field: 'planAmountTotal'
+                field: 'planAmountTotal',
+                width: 100
             }, {
-                field: 'fixContractAmountTotal'
+                field: 'fixContractAmountTotal',
+                width: 100
             }, {
-                field: 'fixChangeAmountTotal'
+                field: 'fixChangeAmountTotal',
+                width: 100
             }, {
-                field: 'fixChangeScale'
+                field: 'fixChangeScale',
+                width: 100
             }, {
-                field: 'priceValue'
+                field: 'prziceValue',
+                width: 100
             }, {
-                field: 'diffPlanAmountTotal'
+                field: 'diffPlanAmountTotal',
+                width: 100
             }, {
-                field: 'quantityOfWorkValue'
+                field: 'quantityOfWorkValue',
+                width: 100
             }, {
-                field: 'priceValue'
+                field: 'priceValue',
+                width: 100
             }, {
-                field: 'priceValue'
+                field: 'priceValue',
+                width: 100
             }, {
                 field: 'pricingMode',
+                width: 100,
                 formatter: function (value, row, index) {
                     if (value === 0)
                         return "总价闭口";
@@ -191,6 +188,7 @@
                 }
             }, {
                 field: 'contractMode',
+                width: 100,
                 formatter: function (value, row, index) {
                     if (value === 0)
                         return "总包";
@@ -201,6 +199,7 @@
                 }
             }, {
                 field: 'contractType',
+                width: 100,
                 formatter: function (value, row, index) {
                     if (value === 0)
                         return "报建类";
@@ -213,6 +212,7 @@
                 }
             }, {
                 field: 'contractAttribute',
+                width: 100,
                 formatter: function (value, row, index) {
                     if (value === 0)
                         return "合同";
@@ -220,9 +220,11 @@
                         return "非合同";
                 }
             }, {
-                field: 'agreementNumber'
+                field: 'agreementNumber',
+                width: 100
             }, {
                 field: 'isAgreementTemplate',
+                width: 100,
                 formatter: function (value, row, index) {
                     if (value === 0)
                         return "是";
@@ -230,9 +232,12 @@
                         return "否";
                 }
             }, {
-                field: 'remark'
+                field: 'remark',
+                width: 100
+
             }, {
-                field: 'remark'
+                field: 'remark',
+                width: 100
             }]
         });
 

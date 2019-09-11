@@ -204,11 +204,6 @@
     TreegridData.prototype.initTable = function () {
         var html = [], that = this, columns = [];
         this.$header = this.$el.find('>thead');
-        //是否存在表头
-        if (!this.$header.length) {
-            //不存在创建一个
-            this.$header = $('<thead></thead>').appendTo(this.$tableHeader);
-        }
 
         //存在表头 获取表头列信息
         this.$header.find('tr').each(function () {
@@ -251,7 +246,7 @@
 
 
     TreegridData.prototype.initHeader = function () {
-        var that = this,
+        var that = this, maxHeight = 0,//最大高度
             html = [];
         this.header = {
             fields: [],
@@ -272,10 +267,11 @@
                     class_ = sprintf(' class="%s"', column['class']),
                     unitWidth = 'px',
                     width = column.width;
-
+                
                 if (column.width && typeof column.width === 'string') {
                     width = column.width.replace('%', '').replace('px', '');
                 }
+                
                 if (column['class']) {
                     class_ = sprintf(' class="%s"', column['class']);
                 }
@@ -285,8 +281,6 @@
                 style += sprintf('width: %s', !width ?
                     '36px' : (width ? width + unitWidth : undefined));
 
-
-
                 //具有索引的列信息
                 if (typeof column.fieldIndex !== 'undefined') {
                     that.header.fields[column.fieldIndex] = column.field;
@@ -295,6 +289,7 @@
                     that.header.formatters[column.fieldIndex] = column.formatter;
                     that.header.editables[column.fieldIndex] = column.editable;
                     that.header.groupByFields[column.fieldIndex] = column.groupByField;
+                    maxHeight += column.width;
                 }
 
                 html.push('<td',
@@ -310,13 +305,12 @@
             });
             html.push('</tr>');
         });
-        //是否存在表头
-        if (this.$header.length) {
-            //移除当前列头
-            this.$header.css('display','none');
-        }
-        var table = $('<table style="table-layout: fixed;"></table>').append(html.join(''));
-        this.$tableHeader.html(table);
+        
+        //隐藏原始当前表头
+        this.$header.css('display','none');
+        //上下两个表头一致 思路 计算每列宽度，保持两个表格宽度固定一致，移除掉boostarp width=100%
+        this.$tableHeader.html($('<table style="table-layout: fixed" ></table>').css("min-width",maxHeight).append(html.join('')));
+        this.$tableBody.find("table").css("min-width",maxHeight);
 
         // this.$header.html(html.join(''));
 
