@@ -71,6 +71,7 @@
         "apportion": "",
         "company": "广西区域公司",
         "companyId": "300",
+        "isStand": 1,
         "version": "核算科目模板v2",
         "isRisk": 0
     },

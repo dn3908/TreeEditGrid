@@ -1,3 +1,10 @@
+<!--
+ * @Description: In User Settings Edit
+ * @Author: your name
+ * @Date: 2019-09-22 19:01:55
+ * @LastEditTime: 2019-09-26 00:45:58
+ * @LastEditors: Please set LastEditors
+ -->
 <!DOCTYPE html>
 <!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
 <!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
@@ -6,11 +13,6 @@
 <html>
 <!--<![endif]-->
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-    }
-
     .menu {
         width: 100px;
         border: 1px solid #ccc;
@@ -62,8 +64,9 @@
     <table id="contractGrid" style="table-layout: fixed;">
         <thead id="contractThead">
             <tr>
-                <th >科目名称</th>
+                <th>科目名称</th>
                 <th>目标成本</th>
+                <th>操作</th>
             </tr>
         </thead>
         <!-- <ul class="menu" id="menu">
@@ -109,7 +112,7 @@
                 width: 300,
             }, {
                 field: 'totalMoney',
-                width:300,
+                width: 300,
                 editable: {
                     type: 'text',
                     title: '金额',
@@ -124,50 +127,94 @@
                         if (!patrn.test(v)) return '金额只能为正实数';
                     },
                 }
+            }, {
+                width: 300,
+                formatter: function (value, row, index) {
+                    if (row.isStand == 1) {
+                        return `<button onclick="addrow('${index}')">添加</button>`
+                    }
+                    if (row.isCalculate == 1) {
+                        return `<button onclick="delrow('${index}')">删除</button>`
+                    }
+                }
             }]
         });
 
-        function resh(){
+        function addrow(index) {
+            console.log(index);
+            let obj = {
+                "isDelete": 0,
+                "name": "城市建设配套费",
+                "accoutCode": "01.02.01.01",
+                "parentCode": "01.02.01",
+                "originalIndicatorValue": "规划设计指标",
+                "indexValue": "266580",
+                "indexType": "报建面积",
+                "indexUnit": "m",
+                "coefficientValue": "1",
+                "coefficientType": "系数",
+                "coefficientUnit": "㎡/㎡",
+                "quantityOfWorkValue": "266580",
+                "quantityOfWorkType": "报建面积",
+                "quantityOfWorkUnit": "㎡",
+                "priceValue": "14.4",
+                "priceType": "A档标准",
+                "totalMoney": null,
+                "isFinal": 1,
+                "isCalculate": 1,
+                "isJianan": "",
+                "apportion": "报建面积",
+                "apportionProductId": "59,60,61,62,63,64,65,66,67,68,69,70,71,72,",
+                "apportionProductName": "T6温泉公寓,T2公寓,温泉商墅,温泉水会,精品酒店,住宅机动车位,非机动车位,商业机动车位,住宅人防机动车位,物管用房,公厕,消防控制室,住宅架空层,治安联防站,",
+                "company": "广西区域公司",
+                "companyId": "300",
+                "version": "核算科目模板v2",
+                "isRisk": 0
+            }
+            contractGrid.treegridData('addRow', { 'index': index, row: obj });
+        }
+
+        function resh() {
             if (contractGrid != undefined) {
                 contractGrid.treegridData('destroy');
             }
 
-         contractGrid = $('#contractGrid').treegridData({
-            id: 'accoutCode',
-            parentColumn: 'parentCode',
-            thead: '#contractThead',
-            // data :json,
-            type: "post", //请求数据的ajax类型
-            url: 'js/josn1.json',
-            expandColumn: null,//在哪一列上面显示展开按钮
-            bordered: true,  //是否显示边框
-            indent: 10,
-            // expandAll: false,  //是否全部展开
-            editable: true,
-            contextmenu: true,
-            menuEl: '.menu',
-            columns: [{
-                field: 'name',
-                width: 300,
-            }, {
-                field: 'totalMoney',
-                width:300,
-                editable: {
-                    type: 'text',
-                    title: '金额',
-                    showbuttons: false,
-                    onblur: "submit",
-                    mode: "inline",
-                    validate: function (v) {
-                        if (!v) return '金额不能为空';
-                        //正则校验输入格式：最多两位小数。
-                        //  let patrn = /^([1-9]\d*\.\d{1,2}|0\.\d[1-9]|[1-9]\d*)$/;
-                        let patrn = /^[0-9]+.?[0-9]*$/;
-                        if (!patrn.test(v)) return '金额只能为正实数';
-                    },
-                }
-            }]
-        });
+            contractGrid = $('#contractGrid').treegridData({
+                id: 'accoutCode',
+                parentColumn: 'parentCode',
+                thead: '#contractThead',
+                // data :json,
+                type: "post", //请求数据的ajax类型
+                url: 'js/josn1.json',
+                expandColumn: null,//在哪一列上面显示展开按钮
+                bordered: true,  //是否显示边框
+                indent: 10,
+                // expandAll: false,  //是否全部展开
+                editable: true,
+                contextmenu: true,
+                menuEl: '.menu',
+                columns: [{
+                    field: 'name',
+                    width: 300,
+                }, {
+                    field: 'totalMoney',
+                    width: 300,
+                    editable: {
+                        type: 'text',
+                        title: '金额',
+                        showbuttons: false,
+                        onblur: "submit",
+                        mode: "inline",
+                        validate: function (v) {
+                            if (!v) return '金额不能为空';
+                            //正则校验输入格式：最多两位小数。
+                            //  let patrn = /^([1-9]\d*\.\d{1,2}|0\.\d[1-9]|[1-9]\d*)$/;
+                            let patrn = /^[0-9]+.?[0-9]*$/;
+                            if (!patrn.test(v)) return '金额只能为正实数';
+                        },
+                    }
+                }]
+            });
         }
 
 

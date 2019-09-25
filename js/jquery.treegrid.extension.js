@@ -1,3 +1,10 @@
+/*
+ * @Description: In User Settings Edit
+ * @Author: your name
+ * @Date: 2019-09-22 19:01:55
+ * @LastEditTime: 2019-09-26 00:41:19
+ * @LastEditors: Please set LastEditors
+ */
 (function ($) {
     "use strict";
 
@@ -267,11 +274,11 @@
                     class_ = sprintf(' class="%s"', column['class']),
                     unitWidth = 'px',
                     width = column.width;
-                
+
                 if (column.width && typeof column.width === 'string') {
                     width = column.width.replace('%', '').replace('px', '');
                 }
-                
+
                 if (column['class']) {
                     class_ = sprintf(' class="%s"', column['class']);
                 }
@@ -305,12 +312,12 @@
             });
             html.push('</tr>');
         });
-        
+
         //隐藏原始当前表头
-        this.$header.css('display','none');
+        this.$header.css('display', 'none');
         //上下两个表头一致 思路 计算每列宽度，保持两个表格宽度固定一致，移除掉boostarp width=100%
-        this.$tableHeader.html($('<table style="table-layout: fixed" ></table>').css("min-width",maxHeight).append(html.join('')));
-        this.$tableBody.find("table").css("min-width",maxHeight);
+        this.$tableHeader.html($('<table style="table-layout: fixed" ></table>').css("min-width", maxHeight).append(html.join('')));
+        this.$tableBody.find("table").css("min-width", maxHeight);
 
         // this.$header.html(html.join(''));
 
@@ -485,7 +492,7 @@
         for (var i = 0, m = data.length; i < m; i++) {
             var node = data[i];
             if (node[that.options.parentColumn] == parentNode[that.options.id]) {
-                var nowParentIndex = (parentIndex + "" + i);
+                var nowParentIndex = (parentIndex + "-" + i);
                 var newlevel = level + 1, tr;
                 //判断是否分组
                 if (this.options.groupBy) {
@@ -958,6 +965,19 @@
     }
 
     /**
+     * 必须具有索引，及行对象
+     */
+    TreegridData.prototype.addRow = function (params) {
+        var data = this.getData();
+        if (!params.hasOwnProperty('index') || !params.hasOwnProperty('row')) {
+            return;
+        }
+        data.splice(params.index, 0, params.row);
+        this.load(data);
+
+    }
+
+    /**
      * @description: 获取选中数据
      * @param {type}
      * @return:
@@ -1015,7 +1035,7 @@
      * 所有方法
      */
     var allowedMethods = [
-        'getAllNodes', 'expand2', 'getRowByUniqueId', 'getSelect', 'updateCell', 'load', 'destroy', 'getData', 'collapseAll', 'expandAll'
+        'getAllNodes', 'expand2', 'getRowByUniqueId', 'getSelect', 'updateCell', 'load', 'destroy', 'getData', 'collapseAll', 'expandAll', 'addRow'
 
     ];
 
