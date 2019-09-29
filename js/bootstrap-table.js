@@ -1,3 +1,10 @@
+/*
+ * @Description: In User Settings Edit
+ * @Author: your name
+ * @Date: 2019-09-22 19:01:55
+ * @LastEditTime: 2019-09-22 19:01:55
+ * @LastEditors: your name
+ */
 /**
  * @author zhixin wen <wenzhixin2010@gmail.com>
  * version: 1.11.1
@@ -226,7 +233,7 @@
         if (!Object.keys) {
             Object.keys = (function () {
                 var hasOwnProperty = Object.prototype.hasOwnProperty,
-                    hasDontEnumBug = !({toString: null}).propertyIsEnumerable('toString'),
+                    hasDontEnumBug = !({ toString: null }).propertyIsEnumerable('toString'),
                     dontEnums = [
                         'toString',
                         'toLocaleString',
@@ -701,7 +708,7 @@
                     rspan = +$this.attr('rowspan') || 1,
                     tx, ty;
 
-                for (; m[y] && m[y][x]; x++) ; //skip already occupied cells in current row
+                for (; m[y] && m[y][x]; x++); //skip already occupied cells in current row
 
                 for (tx = x; tx < x + cspan; tx++) { //mark matrix elements occupied by current cell with true
                     for (ty = y; ty < y + rspan; ty++) {
@@ -1146,8 +1153,8 @@
         if (this.options.showToggle) {
             this.$toolbar.find('button[name="toggle"]')
                 .off('click').on('click', function () {
-                that.toggleView();
-            });
+                    that.toggleView();
+                });
         }
 
         if (this.options.showColumns) {
@@ -1745,18 +1752,18 @@
 
                 text = [sprintf(that.options.cardView ?
                     '<div class="card-view %s">' : '<td class="bs-checkbox %s">', column['class'] || ''),
-                    '<input' +
-                    sprintf(' data-index="%s"', i) +
-                    sprintf(' name="%s"', that.options.selectItemName) +
-                    sprintf(' type="%s"', type) +
-                    sprintf(' value="%s"', item[that.options.idField]) +
-                    sprintf(' checked="%s"', value === true ||
+                '<input' +
+                sprintf(' data-index="%s"', i) +
+                sprintf(' name="%s"', that.options.selectItemName) +
+                sprintf(' type="%s"', type) +
+                sprintf(' value="%s"', item[that.options.idField]) +
+                sprintf(' checked="%s"', value === true ||
                     (value_ || value && value.checked) ? 'checked' : undefined) +
-                    sprintf(' disabled="%s"', !column.checkboxEnabled ||
+                sprintf(' disabled="%s"', !column.checkboxEnabled ||
                     (value && value.disabled) ? 'disabled' : undefined) +
-                    ' />',
-                    that.header.formatters[j] && typeof value === 'string' ? value : '',
-                    that.options.cardView ? '</div>' : '</td>'
+                ' />',
+                that.header.formatters[j] && typeof value === 'string' ? value : '',
+                that.options.cardView ? '</div>' : '</td>'
                 ].join('');
 
                 item[that.header.stateField] = value === true || (value && value.checked);
@@ -2046,7 +2053,7 @@
             if (this.options.searchText !== '') {
                 var $search = this.$toolbar.find('.search input');
                 $search.val(this.options.searchText);
-                this.onSearch({currentTarget: $search});
+                this.onSearch({ currentTarget: $search });
             }
         }
     };
@@ -2124,7 +2131,7 @@
         fixedBody = this.$tableBody.get(0);
 
         scrollWidth = fixedBody.scrollWidth > fixedBody.clientWidth &&
-        fixedBody.scrollHeight > fixedBody.clientHeight + this.$header.outerHeight() ?
+            fixedBody.scrollHeight > fixedBody.clientHeight + this.$header.outerHeight() ?
             getScrollBarWidth() : 0;
 
         this.$el.css('margin-top', -this.$header.outerHeight());
@@ -2415,6 +2422,7 @@
     };
 
     BootstrapTable.prototype.remove = function (params) {
+
         var len = this.options.data.length,
             i, row;
 
@@ -2922,7 +2930,7 @@
     BootstrapTable.prototype.resetSearch = function (text) {
         var $search = this.$toolbar.find('.search input');
         $search.val(text || '');
-        this.onSearch({currentTarget: $search});
+        this.onSearch({ currentTarget: $search });
     };
 
     BootstrapTable.prototype.expandRow_ = function (expand, index) {

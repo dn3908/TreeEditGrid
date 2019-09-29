@@ -2,7 +2,7 @@
  * @Description: In User Settings Edit
  * @Author: your name
  * @Date: 2019-09-22 19:01:55
- * @LastEditTime: 2019-09-26 00:41:19
+ * @LastEditTime: 2019-09-30 00:29:01
  * @LastEditors: Please set LastEditors
  */
 (function ($) {
@@ -978,6 +978,36 @@
     }
 
     /**
+     * 必须具有属性和值
+     */
+    TreegridData.prototype.delRow = function (params) {
+        var data = this.getData(),
+            i, row;
+
+        var len = data.length
+
+        if (!params.hasOwnProperty('field') || !params.hasOwnProperty('values')) {
+            return;
+        }
+
+        for (i = len - 1; i >= 0; i--) {
+            row = data[i];
+
+            if (!row.hasOwnProperty(params.field)) {
+                continue;
+            }
+            if ($.inArray(row[params.field], params.values) !== -1) {
+                data.splice(i, 1);
+            }
+        }
+        if (len === data.length) {
+            return;
+        }
+        this.load(data);
+
+    }
+
+    /**
      * @description: 获取选中数据
      * @param {type}
      * @return:
@@ -1035,7 +1065,7 @@
      * 所有方法
      */
     var allowedMethods = [
-        'getAllNodes', 'expand2', 'getRowByUniqueId', 'getSelect', 'updateCell', 'load', 'destroy', 'getData', 'collapseAll', 'expandAll', 'addRow'
+        'getAllNodes', 'expand2', 'getRowByUniqueId', 'getSelect', 'updateCell', 'load', 'destroy', 'getData', 'collapseAll', 'expandAll', 'addRow', 'delRow'
 
     ];
 
