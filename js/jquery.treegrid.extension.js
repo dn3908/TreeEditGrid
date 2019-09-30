@@ -2,7 +2,7 @@
  * @Description: In User Settings Edit
  * @Author: your name
  * @Date: 2019-09-22 19:01:55
- * @LastEditTime: 2019-09-30 00:29:01
+ * @LastEditTime: 2019-09-30 23:51:18
  * @LastEditors: Please set LastEditors
  */
 (function ($) {
@@ -559,7 +559,7 @@
                 sprintf(' data-level="%s"', level),
                 '>'
             );
-
+            row["index"] = index + "_" + childrenIndex;
             $.each(that.options.columns, function (colindex, column) {
                 var text = '',
                     value_ = getItemField(row, column.field),
@@ -677,6 +677,9 @@
             sprintf(' data-level="%s"', level),
             '>'
         );
+        //为当前数据添加属性index属性
+        item["index"] = index;
+
         $.each(this.header.fields, function (j, field) {
             var value_ = getItemField(item, field),
                 value = '',

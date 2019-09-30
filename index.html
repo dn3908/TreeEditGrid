@@ -2,7 +2,7 @@
  * @Description: In User Settings Edit
  * @Author: your name
  * @Date: 2019-09-22 19:01:55
- * @LastEditTime: 2019-09-30 00:28:25
+ * @LastEditTime: 2019-09-30 23:55:58
  * @LastEditors: Please set LastEditors
  -->
 <!DOCTYPE html>
@@ -141,7 +141,8 @@
         });
 
         function delrow(index) {
-            contractGrid.treegridData('delRow', { 'field': "accoutCode", 'values': ["01.02.01.01"] });
+            console.log(contractGrid.treegridData("getData"));
+            contractGrid.treegridData('delRow', { 'field': "index", 'values': [index] });
         }
 
         function addrow(index) {
